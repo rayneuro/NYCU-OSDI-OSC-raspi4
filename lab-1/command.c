@@ -1,0 +1,70 @@
+
+#include "io.h"
+#include "string.h"
+#include "command.h"
+
+
+// PM Registers
+enum{
+    PERIPHERAL_BASE = 0xFE000000,
+    PM_BASE = PERIPHERAL_BASE + 0x001000,
+    PM_PASSWORD = 0x5A000000,
+    PM_RSTC = PM_BASE + 0x1c,
+    PM_WDOG = PM_BASE + 0x24,
+
+};
+
+
+void command_timestamp()
+{
+    unsigned long int cnt_frq, cnt_pct;
+    char str[20];
+
+    asm volatile(
+        "mrs %0, cntfrq_el0 \n\t"
+        "mrs %1, cntpct_el0 \n\t"
+        : "=r" (cnt_frq),  "=r" (cnt_pct)
+        :
+    );
+
+    float time =  ((float)cnt_frq) / cnt_pct ;
+
+    ftoa(time, str,6);
+    uart_writeText("[");
+    uart_writeText(str);
+    uart_writeText("]\n");
+}
+
+void command_hello()
+{
+    uart_writeText("Hello world\n");
+}
+
+
+void command_help()
+{
+    uart_writeText("Supported commands:\n");
+    uart_writeText("help        : Show this help message\n");
+    uart_writeText("timestamp   : Show current timestamp\n");
+    uart_writeText("hello       : Print Hello world\n");
+}
+
+void command_reboot()
+{
+    uart_writeText("Rebooting...\n");
+    mmio_write(PM_RSTC, PM_PASSWORD | 0x20); // Write to PM_RSTC to trigger a full reset
+    mmio_write(PM_WDOG, PM_PASSWORD | 1);    // Set watchdog timer to 1 tick
+    while (1) asm("wfe");
+}
+
+void command_not_found(char * buf)
+{
+    uart_writeText("Command ");
+    uart_writeText(buf);
+    uart_writeText("not found\n");
+}
+
+
+
+
+

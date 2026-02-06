@@ -1,6 +1,6 @@
+#include "command.h"
 #include "shell.h"
 #include "io.h"
-#include "command.h"
 #include "string.h"
 
 
@@ -22,7 +22,8 @@ void shell_init(){
         input_parse = parse_character( input_char );
 
         command_line_parser( input_parse, input_char, buffer ,&buffer_counter);
-    }    
+    } 
+    uart_update(); 
 
 }
 
@@ -41,7 +42,7 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
     }
     else if(cp == NEW_LINE){
         uart_writeByteBlocking(ch);
-        if((*counter) == UART_MAX_QUEUE){
+        if((*counter) == MAX_BUFFER_LEN){
             return ;
         }else{
             uart_writeByteBlocking('\0');

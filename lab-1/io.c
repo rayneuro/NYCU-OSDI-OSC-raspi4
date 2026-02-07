@@ -163,3 +163,19 @@ void uart_update() {
        if (ch == '\r') uart_writeText("\n"); else uart_writeByteBlocking(ch);
     }
 }
+
+void uart_write_char(unsigned char ch){
+    uart_writeByteBlockingActual(ch);
+}
+
+void uart_puts(char * buffer){
+    while (*buffer) {
+       uart_write_char(*buffer++);
+    }
+    
+
+}
+
+void uart_CR(){
+    uart_write_char('\r');
+}

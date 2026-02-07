@@ -12,18 +12,22 @@ void shell_init(){
     enum SHELL_CHARACTER input_parse;
 
     // line head
-    uart_writeText("# ");
+    uart_puts("# ");
 
     // read char
     while(1)
     {
-        input_char = uart_readByte();
-
-        input_parse = parse_character( input_char );
-
-        command_line_parser( input_parse, input_char, buffer ,&buffer_counter);
+        
+        if (uart_isReadByteReady()){
+            input_char = uart_readByte();
+            //uart_write_char(input_char);
+            input_parse = parse_character( input_char );
+            command_line_parser( input_parse, input_char, buffer ,&buffer_counter);
+            
+        }
+        
     } 
-    uart_update(); 
+    
 
 }
 
@@ -35,17 +39,17 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
     if(cp == BACK_SPACE){
         if ( (*counter) > 0 )
             (*counter) --;
-        uart_writeByteBlocking(ch);
-        uart_writeByteBlocking(' ');
-        uart_writeByteBlocking(ch);
+        uart_write_char(ch);
+        uart_write_char(' ');
+        uart_write_char(ch);
 
     }
     else if(cp == NEW_LINE){
-        uart_writeByteBlocking(ch);
+        uart_write_char(ch);
         if((*counter) == MAX_BUFFER_LEN){
             return ;
         }else{
-            uart_writeByteBlocking('\0');
+            buf[(*counter)] = '\0';
              
             if(!strcmp( buf,"help")) command_help();
             else if(!strcmp(buf, "hello")) command_hello();
@@ -58,7 +62,7 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
         uart_writeText("# ");
 
     }else if(cp == REGULAR_INPUT ){
-        uart_writeByteBlocking(ch);
+        uart_write_char(ch);
         if ( *counter < MAX_BUFFER_LEN)
         {
             buf[*counter] = ch;

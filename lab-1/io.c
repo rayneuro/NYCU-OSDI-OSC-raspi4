@@ -170,10 +170,11 @@ void uart_write_char(unsigned char ch){
 
 void uart_puts(char * buffer){
     while (*buffer) {
+       
+       if (*buffer == '\n') uart_write_char('\r');
        uart_write_char(*buffer++);
+       
     }
-    
-
 }
 
 void uart_CR(){

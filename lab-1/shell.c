@@ -20,12 +20,11 @@ void shell_init(){
         
         if (uart_isReadByteReady()){
             input_char = uart_readByte();
-            //uart_write_char(input_char);
             input_parse = parse_character( input_char );
             command_line_parser( input_parse, input_char, buffer ,&buffer_counter);
             
         }
-        
+    
     } 
     
 
@@ -38,14 +37,16 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
 
     if(cp == BACK_SPACE){
         if ( (*counter) > 0 )
-            (*counter) --;
-        uart_write_char(ch);
+            (*counter)--;
+        
+        uart_write_char(0x08);
         uart_write_char(' ');
-        uart_write_char(ch);
+        uart_write_char(0x08);
 
     }
     else if(cp == NEW_LINE){
-        uart_write_char(ch);
+        // Typing Enter on concole (Putty or tty) == '\r' == ch
+        uart_puts("\n");
         if((*counter) == MAX_BUFFER_LEN){
             return ;
         }else{
@@ -59,7 +60,7 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
         }
         (*counter) =0;
         strset(buf, 0, MAX_BUFFER_LEN);
-        uart_writeText("# ");
+        uart_puts("# ");
 
     }else if(cp == REGULAR_INPUT ){
         uart_write_char(ch);
@@ -78,7 +79,7 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
 enum SHELL_CHARACTER parse_character(char c){
     if(c > 128 || c < 0)
         return UNKNOWN;
-    if (c == BACK_SPACE)
+    if (c == BACK_SPACE || c == BACK_SPACE_2)
         return BACK_SPACE;
     else if (c == LINE_FEED || c == CARRIAGE_RETURN)
         return NEW_LINE;

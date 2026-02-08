@@ -3,7 +3,9 @@
 #define MAX_BUFFER_LEN 128
 enum SHELL_CHARACTER
 {
+    // ASCII control characters
     BACK_SPACE = 8,
+    BACK_SPACE_2 = 127,
     LINE_FEED = 10,
     CARRIAGE_RETURN = 13,
     REGULAR_INPUT = 1000,

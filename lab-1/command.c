@@ -27,38 +27,37 @@ void command_timestamp()
         :
     );
 
-    float time =  ((float)cnt_frq) / cnt_pct ;
+    float time =  ((float)cnt_pct) / cnt_frq ; 
 
     ftoa(time, str,6);
     uart_puts("[");
     uart_puts(str);
     uart_puts("]\n");
-    uart_CR();
+    
 }
 
 void command_hello()
 {
     uart_puts("Hello world\n");
-    uart_CR();
 }
 
 
 void command_help()
 {
     uart_puts("Supported commands:\n");
-    uart_CR();
+    
     uart_puts("\thelp        : Show this help message\n");
-    uart_CR();
+    
     uart_puts("\ttimestamp   : Show current timestamp\n");
-    uart_CR();
+
     uart_puts("\thello       : Print Hello world\n");
-    uart_CR();
+    
 }
 
 void command_reboot()
 {
     uart_puts("Rebooting...\n");
-    uart_CR();
+    
     mmio_write(PM_RSTC, PM_PASSWORD | 0x20); // Write to PM_RSTC to trigger a full reset
     mmio_write(PM_WDOG, PM_PASSWORD | 1);    // Set watchdog timer to 1 tick
     while (1) asm("wfe");
@@ -69,7 +68,7 @@ void command_not_found(char * buf)
     uart_puts("Command ");
     uart_puts(buf);
     uart_puts(" not found\n");
-    uart_CR();
+    
 }
 
 

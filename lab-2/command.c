@@ -4,12 +4,15 @@
 #include "command.h"
 
 
-// PM Registers UL / ULL postifx is safe
-#define PERIPHERAL_BASE     0xFE000000UL
-#define PM_BASE             (PERIPHERAL_BASE + 0x100000UL)
-#define PM_PASSWORD         0x5A000000UL
-#define PM_RSTC             (PM_BASE + 0x1c)
-#define PM_WDOG             (PM_BASE + 0x24)
+// PM Registers
+enum{
+    PERIPHERAL_BASE = 0xFE000000,
+    PM_BASE = PERIPHERAL_BASE + 0x001000,
+    PM_PASSWORD = 0x5A000000,
+    PM_RSTC = PM_BASE + 0x1c,
+    PM_WDOG = PM_BASE + 0x24,
+
+};
 
 
 void command_timestamp()
@@ -54,16 +57,9 @@ void command_help()
 void command_reboot()
 {
     uart_puts("Rebooting...\n");
-    // Pi 4 's PM  module have short timeout will ignore or delay（race condition）。
-    mmio_write(PM_WDOG, PM_PASSWORD | 100);    // Set watchdog timer to 100 tick
     
     mmio_write(PM_RSTC, PM_PASSWORD | 0x20); // Write to PM_RSTC to trigger a full reset
-   
-    //asm volatile ("dmb sy" ::: "memory");
-    //for (volatile int i = 0; i < 100000; i++) asm("nop");
-
-    uart_puts("Should reboot now...\n");  
-
+    mmio_write(PM_WDOG, PM_PASSWORD | 1);    // Set watchdog timer to 1 tick
     while (1) asm("wfe");
 }
 
@@ -72,6 +68,11 @@ void command_not_found(char * buf)
     uart_puts("Command ");
     uart_puts(buf);
     uart_puts(" not found\n");
+    
+}
+
+void command_get_HWinfo()
+{
     
 }
 

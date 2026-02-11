@@ -1,0 +1,22 @@
+
+#ifndef _MAILBOX_H_
+#define _MAILBOX_H_
+// Mailbox registers
+enum{
+    MMIO_BASE = 0xFE000000,
+    MAILBOX_BASE = MMIO_BASE + 0xb880,
+    MAILBOX_WRITE = MAILBOX_BASE + 0x20,
+    MAILBOX_EMPTY = 0x40000000,
+    MAILBOX_FULL  = 0x80000000
+    
+};
+
+enum{
+    BOARD_REVISION = 0x00010002,
+    VIDEOCORE_REVISION = 0x00000001,
+    VIDEO_CORE_MEMORY =  0x00010006 //Get VC memory
+    
+
+
+};
+#endif

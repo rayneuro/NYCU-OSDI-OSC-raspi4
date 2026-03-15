@@ -73,7 +73,7 @@ void command_not_found(char * buf)
 
 void command_get_HWinfo()
 {
-    
+
 }
 
 

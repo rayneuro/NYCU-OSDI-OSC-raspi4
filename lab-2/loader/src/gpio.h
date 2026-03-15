@@ -38,5 +38,6 @@ unsigned int gpio_clear(unsigned int , unsigned int);
 unsigned int gpio_pull(unsigned int , unsigned int ); 
 unsigned int gpio_function (unsigned int, unsigned int);
 void gpio_useAsAlt3(unsigned int );
+void gpio_useAsAlt5(unsigned int pin_number);
 
 #endif

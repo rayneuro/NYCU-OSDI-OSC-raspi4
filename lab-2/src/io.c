@@ -70,7 +70,7 @@ void gpio_setPinOutputBool(unsigned int pin_number, unsigned int onOrOff) {
     }
 }
 
-// UART
+// mini UART
 
 enum {
     AUX_BASE        = PERIPHERAL_BASE + 0x215000,
@@ -126,42 +126,6 @@ unsigned char uart_readByte() {
 void uart_writeByteBlockingActual(unsigned char ch) {
     while (!uart_isWriteByteReady()); 
     mmio_write(AUX_MU_IO_REG, (unsigned int)ch);
-}
-
-void uart_loadOutputFifo() {
-    while (!uart_isOutputQueueEmpty() && uart_isWriteByteReady()) {
-        uart_writeByteBlockingActual(uart_output_queue[uart_output_queue_read]);
-        uart_output_queue_read = (uart_output_queue_read + 1) & (UART_MAX_QUEUE - 1); // Don't overrun
-    }
-}
-
-void uart_writeByteBlocking(unsigned char ch) {
-    unsigned int next = (uart_output_queue_write + 1) & (UART_MAX_QUEUE - 1); // Don't overrun
-
-    while (next == uart_output_queue_read) uart_loadOutputFifo();
-
-    uart_output_queue[uart_output_queue_write] = ch;
-    uart_output_queue_write = next;
-}
-
-void uart_writeText(char *buffer) {
-    while (*buffer) {
-       if (*buffer == '\n') uart_writeByteBlocking('\r');
-       uart_writeByteBlocking(*buffer++);
-    }
-}
-
-void uart_drainOutputQueue() {
-    while (!uart_isOutputQueueEmpty()) uart_loadOutputFifo();
-}
-
-void uart_update() {
-    uart_loadOutputFifo();
-    
-    if (uart_isReadByteReady()) {
-       unsigned char ch = uart_readByte();
-       if (ch == '\r') uart_writeText("\n"); else uart_writeByteBlocking(ch);
-    }
 }
 
 void uart_write_char(unsigned char ch){

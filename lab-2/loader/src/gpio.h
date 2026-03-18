@@ -33,6 +33,8 @@ enum {
 };
 
 
+void mmio_write(unsigned int reg, unsigned int val) ;
+unsigned int mmio_read(unsigned int reg) ; 
 unsigned int gpio_set(unsigned int , unsigned int );
 unsigned int gpio_clear(unsigned int , unsigned int);
 unsigned int gpio_pull(unsigned int , unsigned int ); 

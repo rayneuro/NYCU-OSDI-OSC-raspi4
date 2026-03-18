@@ -1,18 +1,7 @@
 #ifndef UART_H
 #define UART_H
-void uart_init();
-void uart_writeText(char *buffer);
-void uart_loadOutputFifo();
-unsigned char uart_readByte();
-unsigned int uart_isReadByteReady();
-void uart_writeByteBlocking(unsigned char ch);
-void uart_update();
-void uart_write_char(unsigned char ch);
-void uart_puts(char *buffer);
-void mmio_write(long reg, unsigned int val);
-unsigned int mmio_read(long reg);
-void uart_CR();
 
+#define PERIPHERAL_BASE = 0xFE000000
 // mini UART
 // bcm2711-peripherals.pdf
 enum {
@@ -48,5 +37,15 @@ enum {
     UART_IMSC = PERIPHERAL_BASE +  0x201038 // Interrupt Mask Set Clear Register
     UART_ICR = PERIPHERAL_BASE + 0x201044 // Interrupt Clear Register   
 };
+
+void uart_init();
+unsigned char uart_readByte();
+unsigned int uart_isReadByteReady();
+void uart_writeByteBlocking(unsigned char ch);
+void uart_write_char(unsigned char ch);
+void uart_puts(char *buffer);
+void mmio_write(long reg, unsigned int val);
+unsigned int mmio_read(long reg);
+void uart_CR();
 
 # endif

@@ -1,5 +1,6 @@
 #include "gpio.h"
 #include "uart.h"
+#include "mailbox.h"
 
 #define AUX_MU_BAUD(baud) ((AUX_UART_CLOCK/(baud*8))-1)
 
@@ -8,21 +9,39 @@ unsigned int uart_output_queue_write = 0;
 unsigned int uart_output_queue_read = 0;
 
 void uart_init() {
-    mmio_write(AUX_ENABLES, 1); //enable UART1
-    mmio_write(AUX_MU_IER_REG, 0);
-    mmio_write(AUX_MU_CNTL_REG, 0);
-    mmio_write(AUX_MU_LCR_REG, 3); //8 bits
-    mmio_write(AUX_MU_MCR_REG, 0);
-    mmio_write(AUX_MU_IER_REG, 0);
-    mmio_write(AUX_MU_IIR_REG, 0xC6); //disable interrupts
-    mmio_write(AUX_MU_BAUD_REG, AUX_MU_BAUD(115200));
-    gpio_useAsAlt5(14);
-    gpio_useAsAlt5(15);
-    mmio_write(AUX_MU_CNTL_REG, 3); //enable RX/TX
-}
+    register unsigned int r;
 
-unsigned int uart_isOutputQueueEmpty() {
-    return uart_output_queue_read == uart_output_queue_write;
+    /* initialize UART */
+    mmio_write(UART0_CR , 0);         // turn off UART0
+
+    /* set up clock for consistent divisor values */
+    mbox[0] = 9*4;
+    mbox[1] = MBOX_REQUEST;
+    mbox[2] = MBOX_TAG_SETCLKRATE; // set clock rate
+    mbox[3] = 12;
+    mbox[4] = 8;
+    mbox[5] = 2;           // UART clock
+    mbox[6] = 4000000;     // 4Mhz
+    mbox[7] = 0;           // clear turbo
+    mbox[8] = MBOX_TAG_LAST;
+    mbox_call(MBOX_CH_PROP);
+
+    /* map UART0 to GPIO pins */
+    r =*GPFSEL1;
+    r &= ~((7<<12)|(7<<15)); // gpio14, gpio15
+    r |= (4<<12)|(4<<15);    // alt0
+    *GPFSEL1 = r;
+    *GPPUD = 0;            // enable pins 14 and 15
+    r=150; while(r--) { asm volatile("nop"); }
+    mmio_write(GPPUDCLK0 , (1<<14)|(1<<15));
+    r=150; while(r--) { asm volatile("nop"); }
+    mmio_write(GPPUDCLK0 , 0);        // flush GPIO setup
+
+    mmio_write(UART0_ICR , 0x7FF);    // clear interrupts
+    mmio_write(UART0_IBRD , 2);       // 115200 baud
+    mmio_write(UART0_FBRD , 0xB);
+    mmio_write(UART0_LCRH , 0b11<<5); // 8n1
+    mmio_write(UART0_CR , 0x301);     // enable Tx, Rx, FIFO
 }
 
 unsigned int uart_isReadByteReady()  { return mmio_read(AUX_MU_LSR_REG) & 0x01; }
@@ -36,42 +55,6 @@ unsigned char uart_readByte() {
 void uart_writeByteBlockingActual(unsigned char ch) {
     while (!uart_isWriteByteReady()); 
     mmio_write(AUX_MU_IO_REG, (unsigned int)ch);
-}
-
-void uart_loadOutputFifo() {
-    while (!uart_isOutputQueueEmpty() && uart_isWriteByteReady()) {
-        uart_writeByteBlockingActual(uart_output_queue[uart_output_queue_read]);
-        uart_output_queue_read = (uart_output_queue_read + 1) & (UART_MAX_QUEUE - 1); // Don't overrun
-    }
-}
-
-void uart_writeByteBlocking(unsigned char ch) {
-    unsigned int next = (uart_output_queue_write + 1) & (UART_MAX_QUEUE - 1); // Don't overrun
-
-    while (next == uart_output_queue_read) uart_loadOutputFifo();
-
-    uart_output_queue[uart_output_queue_write] = ch;
-    uart_output_queue_write = next;
-}
-
-void uart_writeText(char *buffer) {
-    while (*buffer) {
-       if (*buffer == '\n') uart_writeByteBlocking('\r');
-       uart_writeByteBlocking(*buffer++);
-    }
-}
-
-void uart_drainOutputQueue() {
-    while (!uart_isOutputQueueEmpty()) uart_loadOutputFifo();
-}
-
-void uart_update() {
-    uart_loadOutputFifo();
-    
-    if (uart_isReadByteReady()) {
-       unsigned char ch = uart_readByte();
-       if (ch == '\r') uart_writeText("\n"); else uart_writeByteBlocking(ch);
-    }
 }
 
 void uart_write_char(unsigned char ch){

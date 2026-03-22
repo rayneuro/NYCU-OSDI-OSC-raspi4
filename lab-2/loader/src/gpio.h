@@ -23,7 +23,8 @@ enum {
     GPIO_MAX_PIN       = 53,
     GPIO_FUNCTION_OUT  = 1,
     GPIO_FUNCTION_ALT5 = 2,
-    GPIO_FUNCTION_ALT3 = 7
+    GPIO_FUNCTION_ALT3 = 7,
+    GPIO_FUNCTION_ALT0 = 4,
 };
 
 enum {
@@ -41,5 +42,6 @@ unsigned int gpio_pull(unsigned int , unsigned int );
 unsigned int gpio_function (unsigned int, unsigned int);
 void gpio_useAsAlt3(unsigned int );
 void gpio_useAsAlt5(unsigned int pin_number);
+void gpio_useAsAlt0(unsigned int pin_number);
 
 #endif

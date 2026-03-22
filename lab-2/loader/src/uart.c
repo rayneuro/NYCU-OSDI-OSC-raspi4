@@ -27,21 +27,19 @@ void uart_init() {
     mbox_call(MBOX_CH_PROP);
 
     /* map UART0 to GPIO pins */
-    r =*GPFSEL1;
-    r &= ~((7<<12)|(7<<15)); // gpio14, gpio15
-    r |= (4<<12)|(4<<15);    // alt0
-    *GPFSEL1 = r;
-    *GPPUD = 0;            // enable pins 14 and 15
-    r=150; while(r--) { asm volatile("nop"); }
-    mmio_write(GPPUDCLK0 , (1<<14)|(1<<15));
-    r=150; while(r--) { asm volatile("nop"); }
-    mmio_write(GPPUDCLK0 , 0);        // flush GPIO setup
+    //r =*GPFSEL1;
+    //r &= ~((7<<12)|(7<<15)); // gpio14, gpio15
+    //r |= (4<<12)|(4<<15);    // alt0
+    gpio_useAsAlt0(14);
+    gpio_useAsAlt0(15);
+
 
     mmio_write(UART0_ICR , 0x7FF);    // clear interrupts
-    mmio_write(UART0_IBRD , 2);       // 115200 baud
-    mmio_write(UART0_FBRD , 0xB);
-    mmio_write(UART0_LCRH , 0b11<<5); // 8n1
-    mmio_write(UART0_CR , 0x301);     // enable Tx, Rx, FIFO
+    // baud rate = UART_CLK / (16 × (IBRD + FBRD / 64))
+    mmio_write(UART0_IBRD , 26);       // 115200 baud
+    mmio_write(UART0_FBRD , 3);
+    mmio_write(UART0_LCRH, (3 << 5) | (1 << 4)); // Set up WLEN（Word Length）3 -> 8 bits and FEN（FIFO Enable）= 1 → open TX/RX FIFO
+    mmio_write(UART0_CR, (1 << 0) | (1 << 8) | (1 << 9) | (1 << 4));    // enable Tx, Rx, FIFO
 }
 
 unsigned int uart_isReadByteReady()  { return mmio_read(AUX_MU_LSR_REG) & 0x01; }

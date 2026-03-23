@@ -39,7 +39,7 @@ void gpio_useAsAlt5(unsigned int pin_number) {
 
 void gpio_useAsAlt0(unsigned int pin_number){
     gpio_pull(pin_number, Pull_None);
-    gpio_function(pin_number, GPIO_FUNCTION_ALT0 )
+    gpio_function(pin_number, GPIO_FUNCTION_ALT0 );
 }
 
 void gpio_initOutputPinWithPullNone(unsigned int pin_number) {

@@ -1,7 +1,7 @@
 #ifndef UART_H
 #define UART_H
 
-#define PERIPHERAL_BASE = 0xFE000000
+#define PERIPHERAL_BASE 0xFE000000
 // mini UART
 // bcm2711-peripherals.pdf
 enum {
@@ -26,16 +26,16 @@ enum {
 // PL011 UART 0
 // bcm2711-peripherals.pdf
 enum {
-    UART_DR =  PERIPHERAL_BASE + 0x201000,
-    UART_RSRECR =  PERIPHERAL_BASE + 0x201004,
-    UART_FR =  PERIPHERAL_BASE + 0x201018, // Flag register
-    UART_ILPR = PERIPHERAL_BASE + 0x201020, // Not in use
-    UART_IBRD = PERIPHERAL_BASE +  0x201024, //Integer Baud rate divisor
-    UART_FBRD = PERIPHERAL_BASE + 0x201028 // Fractional Baud rate divisor
-    UART_LCRH = PERIPHERAL_BASE +  0x20102C  // Line Control
-    UART_CR = PERIPHERAL_BASE + 0x201030 // Control register
-    UART_IMSC = PERIPHERAL_BASE +  0x201038 // Interrupt Mask Set Clear Register
-    UART_ICR = PERIPHERAL_BASE + 0x201044 // Interrupt Clear Register   
+    UART0_DR =  PERIPHERAL_BASE + 0x201000,
+    UART0_RSRECR =  PERIPHERAL_BASE + 0x201004,
+    UART0_FR =  PERIPHERAL_BASE + 0x201018, // Flag register
+    UART0_ILPR = PERIPHERAL_BASE + 0x201020, // Not in use
+    UART0_IBRD = PERIPHERAL_BASE +  0x201024, //Integer Baud rate divisor
+    UART0_FBRD = PERIPHERAL_BASE + 0x201028, // Fractional Baud rate divisor
+    UART0_LCRH = PERIPHERAL_BASE +  0x20102C,  // Line Control
+    UART0_CR = PERIPHERAL_BASE + 0x201030, // Control register
+    UART0_IMSC = PERIPHERAL_BASE +  0x201038, // Interrupt Mask Set Clear Register
+    UART0_ICR = PERIPHERAL_BASE + 0x201044 // Interrupt Clear Register   
 };
 
 void uart_init();
@@ -44,8 +44,6 @@ unsigned int uart_isReadByteReady();
 void uart_writeByteBlocking(unsigned char ch);
 void uart_write_char(unsigned char ch);
 void uart_puts(char *buffer);
-void mmio_write(long reg, unsigned int val);
-unsigned int mmio_read(long reg);
 void uart_CR();
 
 # endif

@@ -18,8 +18,8 @@ void uart_init() {
     mbox[0] = 9*4;
     mbox[1] = MBOX_REQUEST;
     mbox[2] = MBOX_TAG_SETCLKRATE; // set clock rate
-    mbox[3] = 12;
-    mbox[4] = 8;
+    mbox[3] = 12;           // request buffer size = 12 bytes（clock id + rate + skip turbo）
+    mbox[4] = 8;            // request value buffer size
     mbox[5] = 2;           // UART clock
     mbox[6] = 4000000;     // 4Mhz
     mbox[7] = 0;           // clear turbo

@@ -2,7 +2,7 @@
 #ifndef _MAILBOX_H_
 #define _MAILBOX_H_
 
-extern volatile unsigned int mbox[36];
+extern volatile unsigned int mbox[];
 // Mailbox registers
 enum{
     MMIO_BASE = 0xFE000000,
@@ -11,7 +11,8 @@ enum{
     MAILBOX_STATUS = MMIO_BASE + 0x18 ,
     MAILBOX_WRITE = MAILBOX_BASE + 0x20,
     MAILBOX_EMPTY = 0x40000000,
-    MAILBOX_FULL  = 0x80000000
+    MAILBOX_FULL  = 0x80000000,
+    MAILBOX_RESPONSE = 0x80000000,
     
 };
 
@@ -30,10 +31,10 @@ enum{
 
 // Tags : https://github.com/raspberrypi/firmware/wiki/Mailbox-property-interface
 enum{
-    MBOX_TAG_GETSERIAL  =    0x10004,
+    MBOX_TAG_GETSERIAL  = 0x10004,
     MBOX_TAG_SETCLKRATE = 0x38002,
     MBOX_TAG_LAST   = 0,
-    
+    MBOX_REQUEST = 0,
 };
 
 

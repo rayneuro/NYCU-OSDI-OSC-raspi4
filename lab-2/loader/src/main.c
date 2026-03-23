@@ -11,18 +11,18 @@ void main()
 
     // say hello. To reduce loader size I removed uart_puts()
 again:
-    uart_send('R');
-    uart_send('B');
-    uart_send('I');
-    uart_send('N');
-    uart_send('6');
-    uart_send('4');
-    uart_send('\r');
-    uart_send('\n');
+    uart_write_char('R');
+    uart_write_char('B');
+    uart_write_char('I');
+    uart_write_char('N');
+    uart_write_char('6');
+    uart_write_char('4');
+    uart_write_char('\r');
+    uart_write_char('\n');
     // notify raspbootcom to send the kernel
-    uart_send(3);
-    uart_send(3);
-    uart_send(3);
+    uart_write_char(3);
+    uart_write_char(3);
+    uart_write_char(3);
 
     // read the kernel's size
     size=uart_readByte();
@@ -33,12 +33,12 @@ again:
     // send negative or positive acknowledge
     if(size<64 || size>1024*1024) {
         // size error
-        uart_send('S');
-        uart_send('E');
+        uart_write_char('S');
+        uart_write_char('E');
         goto again;
     }
-    uart_send('O');
-    uart_send('K');
+    uart_write_char('O');
+    uart_write_char('K');
 
     // read the kernel
     while(size--) *kernel++ = uart_readByte();

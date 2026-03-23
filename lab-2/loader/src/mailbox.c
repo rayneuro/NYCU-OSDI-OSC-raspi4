@@ -1,11 +1,11 @@
 #include "mailbox.h"
 
-void mmio_write(unsigned int reg, unsigned int val) { *(volatile unsigned int *)reg = val; }
-unsigned int mmio_read(unsigned int reg) { return *(volatile unsigned int *)reg; }
+volatile unsigned int  __attribute__((aligned(16))) mbox[8];
+
 
 int mbox_call(unsigned char ch){
 
-    unsigned int r = (((unsigned int)((unsigned long)&mbox)&~0xF) | (ch&0xF));
+    unsigned int r = (((unsigned int)((unsigned long)&mbox)& 0x0FFFFFFF0UL ) | (ch & 0xF));
     /* wait until we can write to the mailbox */
     do{asm volatile("nop");}while( mmio_read(MAILBOX_STATUS) & MAILBOX_FULL);
     /* write the address of our message to the mailbox with channel identifier */

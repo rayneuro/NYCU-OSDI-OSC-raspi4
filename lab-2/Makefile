@@ -1,22 +1,41 @@
-CFILES = $(wildcard *.c)
-OFILES = $(CFILES:.c=.o)
-CC = aarch64-linux-gnu-gcc
-LINKER = aarch64-linux-gnu-ld
-OBJ_COPY = aarch64-linux-gnu-objcopy
+CC			= aarch64-linux-gnu-gcc
+LD 			= aarch64-linux-gnu-ld
+OBJ_CPY 	= aarch64-linux-gnu-objcopy
+EMULATOR	= qemu-system-aarch64
 
-CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles -mcpu=cortex-a72+nosimd -fno-stack-protector -fno-stack-check 
+CFLAGS 		= -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+
+SRCDIR 		= src
+INCLUDE_DIR = include
+LIB_DIR 	= lib
+LIB_HEADER	= lib/headers
+
+SRCS 		= $(wildcard $(SRCDIR)/*.c )
+OBJS 		= $(patsubst $(SRCDIR)/%.c, %.o, $(SRCS))
+LINK_SCRIPT = link.ld
+
+VPATH = $(SRCDIR)
+vpath %.c %.S $(SRCDIR) 
+
+.PHONY: all clean loader
 
 all: clean kernel8.img
 
-boot.o: boot.S
-	$(CC) $(CFLAGS) -c boot.S -o boot.o
+clean:
+	@rm kernel8.elf kernel8.img raspbootocm *.o >/dev/null 2>/dev/null || true
 
-%.o: %.c
+loader: loader/raspbootocom.cc
+	gcc loader/raspbootocom.cc -o raspbootocom
+
+kernel8.img: start.o $(OBJS)
+	$(LD) -nostdlib -nostartfiles $^ -T $(LINK_SCRIPT) -o kernel8.elf
+	$(OBJ_CPY) -O binary kernel8.elf $@
+
+start.o: start.S
 	$(CC) $(CFLAGS) -c $< -o $@
 
-kernel8.img: boot.o $(OFILES)
-	$(LINKER) -nostdlib boot.o $(OFILES) -T link.ld -o kernel8.elf
-	$(OBJ_COPY) -O binary kernel8.elf kernel8.img
+%.o: %.c
+	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-clean:
-	/bin/rm kernel8.elf *.o *.img > /dev/null 2> /dev/null || true
+run: kernel8.img
+	$(EMULATOR) -M raspi3 -kernel kernel8.img -serial stdio

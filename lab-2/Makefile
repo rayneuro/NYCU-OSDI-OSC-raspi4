@@ -22,10 +22,10 @@ vpath %.c %.S $(SRCDIR)
 all: clean kernel8.img
 
 clean:
-	@rm kernel8.elf kernel8.img raspbootocm *.o >/dev/null 2>/dev/null || true
+	@rm kernel8.elf kernel8.img raspbootcom *.o >/dev/null 2>/dev/null || true
 
-loader: loader/raspbootocom.cc
-	gcc loader/raspbootocom.cc -o raspbootocom
+loader: loader/raspbootcom.cc
+	gcc loader/raspbootcom.cc -o raspbootcom
 
 kernel8.img: start.o $(OBJS)
 	$(LD) -nostdlib -nostartfiles $^ -T $(LINK_SCRIPT) -o kernel8.elf

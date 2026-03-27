@@ -20,3 +20,6 @@ kernel8.img: boot.o $(OFILES)
 
 clean:
 	/bin/rm kernel8.elf *.o *.img > /dev/null 2> /dev/null || true
+
+QEMU:
+	qemu-system-aarch64 -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -nographic -serial mon:stdio -chardev pty,id=miniuart,logfile=mini_uart.log -serial chardev:miniuart -kernel kernel8.img

@@ -37,5 +37,5 @@ start.o: start.S
 %.o: %.c
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-run: kernel8.img
-	$(EMULATOR) -M raspi3 -kernel kernel8.img -serial stdio
+QEMU:
+	qemu-system-aarch64 -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -nographic -serial mon:stdio -chardev pty,id=miniuart,logfile=mini_uart.log -serial chardev:miniuart -kernel kernel8.img

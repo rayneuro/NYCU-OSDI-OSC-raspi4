@@ -1,6 +1,7 @@
 
-#include "io.h"
 #include "string.h"
+#include "uart.h"
+#include "time.h"
 #include "command.h"
 
 
@@ -71,9 +72,23 @@ void command_not_found(char * buf)
     
 }
 
-void command_get_HWinfo()
-{
 
+void command_board_revision()
+{
+    char str[20];  
+    uint32_t board_revision = mbox_get_board_revision();
+
+    uart_puts("Board Revision: ");
+    if (board_revision)
+    {
+        itohex_str(board_revision, sizeof(uint32_t), str);
+        uart_puts(str);
+        uart_puts("\n");
+    }
+    else
+    {
+        uart_puts("Unable to query serial!\n");
+    }
 }
 
 

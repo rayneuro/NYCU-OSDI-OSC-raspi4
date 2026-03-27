@@ -1,13 +1,126 @@
+#ifndef _MAILBOX_H_
+#define _MAILBOX_H_
 #include "gpio.h"
+#include "type.h"
+#include "framebuffer.h"
 
-volatile unsigned int __attribute__((aligned(16))) mbox[8];
 
 
-#define MAILBOX_BASE    MMIO_BASE + 0xb880
+// Mailbox registers
+enum{
+    MMIO_BASE = 0xFE000000,
+    MAILBOX_BASE = MMIO_BASE + 0xb880,
+    MAILBOX_READ = MMIO_BASE,
+    MAILBOX_STATUS = MMIO_BASE + 0x18 ,
+    MAILBOX_WRITE = MAILBOX_BASE + 0x20,
+    MAILBOX_EMPTY = 0x40000000,
+    MAILBOX_FULL  = 0x80000000,
+    MAILBOX_RESPONSE = 0x80000000,
+    
+};
 
-#define MAILBOX_READ    MAILBOX_BASE
-#define MAILBOX_STATUS  MAILBOX_BASE + 0x18
-#define MAILBOX_WRITE   MAILBOX_BASE + 0x20
+// Mailboxes channels : https://github.com/raspberrypi/firmware/wiki/Mailboxes
+enum{
+    MBOX_CH_POWER = 0,
+    MBOX_CH_FB   = 1,
+    MBOX_CH_VUART = 2,
+    MBOX_CH_VCHIQ = 3,
+    MBOX_CH_LEDS  = 4,
+    MBOX_CH_BTNS  = 5,
+    MBOX_CH_TOUCH = 6,
+    MBOX_CH_COUNT = 7,
+    MBOX_CH_PROP  = 8,
+};
 
-#define MAILBOX_EMPTY   0x40000000
-#define MAILBOX_FULL    0x80000000
+// Tags : https://github.com/raspberrypi/firmware/wiki/Mailbox-property-interface
+enum{
+    MBOX_TAG_GETSERIAL  = 0x10004,
+    MBOX_TAG_SETCLKRATE = 0x38002,
+    MBOX_TAG_LAST   = 0,
+    MBOX_REQUEST = 0,
+};
+
+
+// Tags request code
+enum{
+    TAGS_REQ_CODE = 0x00000000,
+    TAGS_REQ_SUCCEED = 0x80000000,
+    TAGS_REQ_ERROR   = 0x80000001,
+    TAGS_REQ_END    = 0x00000000,
+};
+
+// Hardware tags
+enum{
+    TAGS_HARDWARE_BOARD_MODE = 0x00010001,
+    TAGS_HARDWARE_BOARD_REVISION = 0x00010002,
+    TAGS_HARDWARE_MAC_ADDR = 0x00010003,
+    TAGS_HARDWARE_BOARD_SERIAL = 0x00010004,
+    TAGS_HARDWARE_ARM_MEM = 0x00010005,
+    TAGS_HARDWARE_CLOCKS = 0x00010007
+};
+
+// Clock id
+enum{
+    CLOCK_ID_RESERVED = 0x000000000,
+    CLOCK_ID_EMMC = 0x000000001,
+    CLOCK_ID_UART = 0x000000002,
+    CLOCK_ID_ARM = 0x000000003,
+    CLOCK_ID_CORE = 0x000000004,
+    CLOCK_ID_V3D = 0x000000005,
+    CLOCK_ID_H264 = 0x000000006,
+    CLOCK_ID_ISP = 0x000000007,
+    CLOCK_ID_SDRAM = 0x000000008,
+    CLOCK_ID_PIXEL = 0x000000009,
+    CLOCK_ID_PWM = 0x00000000a,
+    CLOCK_ID_HEVC = 0x00000000b,
+    CLOCK_ID_EMMC2 = 0x00000000c,
+    CLOCK_ID_M2MC = 0x00000000d,
+    CLOCK_ID_PIXEL_BVB = 0x00000000e,
+};
+
+// Clock tags operator
+enum{
+    TAGS_GET_CLOCK = 0x00030002,
+    TAGS_SET_CLOCK = 0x00038002,
+};
+
+// Framebuffer tags operator
+enum{
+    FB_ALLOC_BUFFER = 0x00040001,
+    FB_FREE_BUFFER = 0x00048001,
+    FB_BLANK_SCREEN = 0x00040002,
+    FB_PHY_WID_HEIGHT_GET = 0x00040003,
+    FB_PHY_WID_HEIGHT_TEST = 0x00044003,
+    FB_PHY_WID_HEIGHT_SET = 0x00048003,
+    FB_VIR_WID_HEIGHT_GET = 0x00040004,
+    FB_VIR_WID_HEIGHT_TEST = 0x00044004,
+    FB_VIR_WID_HEIGHT_SET = 0x00048004,
+    FB_DEPTH_GET = 0x00040005,
+    FB_DEPTH_TEST = 0x00044005,
+    FB_DEPTH_SET = 0x00048005,
+    FB_PIXEL_ORDER_GET = 0x00040006,
+    FB_PIXEL_ORDER_TEST = 0x00044006,
+    FB_PIXEL_ORDER_SET = 0x00048006,
+    FB_ALPHA_MODE_GET = 0x00040007,
+    FB_ALPHA_MODE_TEST = 0x00044007,
+    FB_ALPHA_MODE_SET = 0x00048007,
+    FB_PITCH_GET = 0x00040008,
+    FB_VIR_OFFSET_GET = 0x00040009,
+    FB_VIR_OFFSET_TEST = 0x00044009,
+    FB_VIR_OFFSET_SET = 0x00048009,
+    FB_OVERSCAN_GET = 0x0004000A,
+    FB_OVERSCAN_TEST = 0x0004400A,
+    FB_OVERSCAN_SET = 0x0004800A,
+    FB_PALETTE_GET = 0x0004000B,
+    FB_PALETTE_TEST = 0x0004400B,
+    FB_PALETTE_SET = 0x0004800B,
+    FB_CURSOR_INFO_SET = 0x00008010,
+    FB_CURSOR_STATE_SET = 0x00008011,
+};
+
+uint32_t mbox_get_board_revision();
+uint64_t mbox_get_VC_base_addr();
+void mbox_set_clock_to_PL011();
+int mbox_framebuffer_init( uint32_t width, uint32_t height, FRAME_BUFFER * fb );
+
+#endif

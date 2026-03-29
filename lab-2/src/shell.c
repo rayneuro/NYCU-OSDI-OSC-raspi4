@@ -56,6 +56,9 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
             else if(!strcmp(buf, "hello")) command_hello();
             else if(!strcmp(buf, "timestamp")) command_timestamp();
             else if(!strcmp(buf, "reboot")) command_reboot();
+            else if(!strcmp(buf,"board vision")) command_board_revision();
+            else if(!strcmp(buf,"VC address")) command_vc_base_addr();
+            else if(!strcmp(buf,"loadimg")) command_load_image();
             else command_not_found(buf);
         }
         (*counter) =0;

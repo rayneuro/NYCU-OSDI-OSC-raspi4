@@ -14,17 +14,9 @@ void uart_init() {
     /* initialize UART */
     mmio_write(UART0_CR , 0);         // turn off UART0
 
-    /* set up clock for consistent divisor values */
-    mbox[0] = 9*4;
-    mbox[1] = MBOX_REQUEST;
-    mbox[2] = MBOX_TAG_SETCLKRATE; // set clock rate
-    mbox[3] = 12;           // request buffer size = 12 bytes（clock id + rate + skip turbo）
-    mbox[4] = 8;            // request value buffer size
-    mbox[5] = 2;           // UART clock
-    mbox[6] = 4000000;     // 4Mhz
-    mbox[7] = 0;           // clear turbo
-    mbox[8] = MBOX_TAG_LAST;
-    mbox_call(MBOX_CH_PROP);
+    /*Set clock for PL011 UART0*/
+    mbox_set_clock_to_PL011();
+
 
     /* map UART0 to GPIO pins */
     //r =*GPFSEL1;
@@ -42,16 +34,16 @@ void uart_init() {
     mmio_write(UART0_CR, (1 << 0) | (1 << 8) | (1 << 9) | (1 << 4));    // enable Tx, Rx, FIFO
 }
 
-unsigned int uart_isReadByteReady()  { return mmio_read(AUX_MU_LSR_REG) & 0x01; }
-unsigned int uart_isWriteByteReady() { return mmio_read(AUX_MU_LSR_REG) & 0x20; }
+unsigned int uart_isReadByteNotReady()  { return mmio_read(UART0_FR) & (1 << 4); }
+unsigned int uart_isWriteByteNotReady() { return mmio_read(UART0_FR) & (1 << 5); }
 
 unsigned char uart_readByte() {
-    while (!uart_isReadByteReady());
+    while (uart_isReadByteNotReady());
     return (unsigned char)mmio_read(AUX_MU_IO_REG);
 }
 
 void uart_writeByteBlockingActual(unsigned char ch) {
-    while (!uart_isWriteByteReady()); 
+    while (uart_isWriteByteNotReady()); 
     mmio_write(AUX_MU_IO_REG, (unsigned int)ch);
 }
 
@@ -70,4 +62,25 @@ void uart_puts(char * buffer){
 
 void uart_CR(){
     uart_write_char('\r');
+}
+
+int uart_getint()
+{
+    int input, output;
+
+    output = 0;
+    
+    while( 1 ) 
+    {
+        input = uart_readByte();
+        uart_write_char(input);
+
+        if ( !isdigit( input ) )
+            break;
+
+        output = output * 10 + (input - '0');
+        
+    }
+
+    return output;
 }

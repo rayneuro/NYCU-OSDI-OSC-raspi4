@@ -60,10 +60,8 @@ void command_reboot()
     mmio_write(PM_RSTC, PM_PASSWORD | 0x20); // Write to PM_RSTC to trigger a full reset
    
     //asm volatile ("dmb sy" ::: "memory");
-    //for (volatile int i = 0; i < 100000; i++) asm("nop");
-
-    uart_puts("Should reboot now...\n");  
-
+    //for (volatile int i = 0; i < 100000; i++) asm("nop");  
+    
     while (1) asm("wfe");
 }
 

@@ -10,8 +10,8 @@
 enum{
     MMIO_BASE = 0xFE000000,
     MAILBOX_BASE = MMIO_BASE + 0xb880,
-    MAILBOX_READ = MMIO_BASE,
-    MAILBOX_STATUS = MMIO_BASE + 0x18 ,
+    MAILBOX_READ = MAILBOX_BASE,
+    MAILBOX_STATUS = MAILBOX_BASE + 0x18 ,
     MAILBOX_WRITE = MAILBOX_BASE + 0x20,
     MAILBOX_EMPTY = 0x40000000,
     MAILBOX_FULL  = 0x80000000,
@@ -33,14 +33,6 @@ enum{
 };
 
 // Tags : https://github.com/raspberrypi/firmware/wiki/Mailbox-property-interface
-enum{
-    MBOX_TAG_GETSERIAL  = 0x10004,
-    MBOX_TAG_SETCLKRATE = 0x38002,
-    MBOX_TAG_LAST   = 0,
-    MBOX_REQUEST = 0,
-};
-
-
 // Tags request code
 enum{
     TAGS_REQ_CODE = 0x00000000,
@@ -56,6 +48,7 @@ enum{
     TAGS_HARDWARE_MAC_ADDR = 0x00010003,
     TAGS_HARDWARE_BOARD_SERIAL = 0x00010004,
     TAGS_HARDWARE_ARM_MEM = 0x00010005,
+    TAGS_HARDWARE_VC_MEM = 0x00010006,
     TAGS_HARDWARE_CLOCKS = 0x00010007
 };
 
@@ -80,8 +73,8 @@ enum{
 
 // Clock tags operator
 enum{
-    TAGS_GET_CLOCK = 0x00030002,
-    TAGS_SET_CLOCK = 0x00038002,
+    MBOX_TAGS_GET_CLOCK = 0x00030002,
+    MBOX_TAGS_SET_CLOCK = 0x00038002,
 };
 
 // Framebuffer tags operator

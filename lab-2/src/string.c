@@ -1,5 +1,6 @@
 #include "string.h"
 #include "math.h"
+#include "type.h"
 
 int strcmp ( char * s1, char * s2 )
 {
@@ -93,3 +94,31 @@ void reverse ( char * s )
         s[0] = temp;
     }
 }
+
+void itohex_str( uint64_t d, int size, char * s )
+{
+    int i = 0;
+    unsigned int n;
+    int c;
+
+    c = size * 8;
+    s[0] = '0';
+    s[1] = 'x';
+
+    for( c = c - 4, i = 2; c >= 0; c -= 4, i++)
+    {
+        // get highest tetrad
+        n = ( d >> c ) & 0xF;
+
+        // 0-9 => '0'-'9', 10-15 => 'A'-'F'
+        if ( n > 9 && n < 16 )
+            n += ('A' - 10);
+        else
+            n += '0';
+       
+        s[i] = n;
+    }
+
+    s[i] = '\0';
+}
+

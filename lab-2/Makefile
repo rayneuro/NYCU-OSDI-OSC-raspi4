@@ -3,10 +3,10 @@ LD 			= aarch64-linux-gnu-ld
 OBJ_CPY 	= aarch64-linux-gnu-objcopy
 EMULATOR	= qemu-system-aarch64
 
-CFLAGS 		= -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles -mcpu=cortex-a72+nosimd -fno-stack-protector -fno-stack-check 
 
 SRCDIR 		= src
-INCLUDE_DIR = include
+INCLUDE_DIR = inc
 LIB_DIR 	= lib
 LIB_HEADER	= lib/headers
 
@@ -28,7 +28,7 @@ loader: loader/raspbootcom.cc
 	gcc loader/raspbootcom.cc -o raspbootcom
 
 kernel8.img: start.o $(OBJS)
-	$(LD) -nostdlib -nostartfiles $^ -T $(LINK_SCRIPT) -o kernel8.elf
+	$(LD) -nostdlib $^ -T $(LINK_SCRIPT) -o kernel8.elf
 	$(OBJ_CPY) -O binary kernel8.elf $@
 
 start.o: start.S
@@ -38,4 +38,4 @@ start.o: start.S
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 QEMU:
-	qemu-system-aarch64 -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -nographic -serial mon:stdio -chardev pty,id=miniuart,logfile=mini_uart.log -serial chardev:miniuart -kernel kernel8.img
+	qemu-system-aarch64 -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -nographic -serial mon:stdio -chardev pty,id=pl011,logfile=pl011.log -serial chardev:pl011 -kernel kernel8.img

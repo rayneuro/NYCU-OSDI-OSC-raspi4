@@ -18,7 +18,7 @@ void shell_init(){
     while(1)
     {
         
-        if (uart_isReadByteReady()){
+        if (!uart_isReadByteNotReady()){
             input_char = uart_readByte();
             input_parse = parse_character( input_char );
             command_line_parser( input_parse, input_char, buffer ,&buffer_counter);

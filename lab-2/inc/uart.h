@@ -41,8 +41,9 @@ enum {
 
 void uart_init();
 unsigned char uart_readByte();
-unsigned int uart_isReadByteReady();
-void uart_writeByteBlocking(unsigned char ch);
+unsigned int uart_isReadByteNotReady();
+unsigned int uart_isWriteByteNotReady();
+void uart_writeByteBlockingActual(unsigned char ch);
 void uart_write_char(unsigned char ch);
 void uart_puts(char *buffer);
 void uart_CR();

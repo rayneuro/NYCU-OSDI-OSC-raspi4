@@ -2,7 +2,7 @@
 #include "uart.h"
 #include "mailbox.h"
 
-#define AUX_MU_BAUD(baud) ((AUX_UART_CLOCK/(baud*8))-1)
+#define AUX_MU_BAUD(baud) ((AUX_UART_CLOCK/(baud*8))-1) // Set up for mini UART1
 
 unsigned char uart_output_queue[UART_MAX_QUEUE];
 unsigned int uart_output_queue_write = 0;
@@ -39,12 +39,12 @@ unsigned int uart_isWriteByteNotReady() { return mmio_read(UART0_FR) & (1 << 5);
 
 unsigned char uart_readByte() {
     while (uart_isReadByteNotReady());
-    return (unsigned char)mmio_read(AUX_MU_IO_REG);
+    return (unsigned char)mmio_read(UART0_DR);
 }
 
 void uart_writeByteBlockingActual(unsigned char ch) {
     while (uart_isWriteByteNotReady()); 
-    mmio_write(AUX_MU_IO_REG, (unsigned int)ch);
+    mmio_write(UART0_DR, (unsigned int)ch);
 }
 
 void uart_write_char(unsigned char ch){

@@ -8,13 +8,11 @@
 
 
 // PM Registers
-enum{
-    PM_BASE = PERIPHERAL_BASE + 0x001000,
-    PM_PASSWORD = 0x5A000000,
-    PM_RSTC = PM_BASE + 0x1c,
-    PM_WDOG = PM_BASE + 0x24,
-
-};
+// using a macro is safer than using an enum
+#define PM_BASE             (0xFE000000UL + 0x100000UL)
+#define PM_PASSWORD         0x5A000000UL
+#define PM_RSTC             (PM_BASE + 0x1c)
+#define PM_WDOG             (PM_BASE + 0x24)
 
 
 void command_timestamp()
@@ -53,6 +51,12 @@ void command_help()
     uart_puts("\ttimestamp   : Show current timestamp\n");
 
     uart_puts("\thello       : Print Hello world\n");
+
+    uart_puts("\tboardvision : Print board vision\n");
+
+    uart_puts("\tVC address  : Print video core address\n");
+
+    uart_puts("\tload image  : Load the kernel image")
     
 }
 

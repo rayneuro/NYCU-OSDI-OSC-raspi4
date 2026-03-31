@@ -28,7 +28,7 @@ loader: loader/raspbootcom.cc
 	gcc loader/raspbootcom.cc -o raspbootcom
 
 kernel8.img: start.o $(OBJS)
-	$(LD) -nostdlib $^ -T $(LINK_SCRIPT) -o kernel8.elf
+	$(LD) -nostdlib start.o $(OBJS) -T $(LINK_SCRIPT) -o kernel8.elf
 	$(OBJ_CPY) -O binary kernel8.elf $@
 
 start.o: start.S
@@ -39,3 +39,6 @@ start.o: start.S
 
 QEMU:
 	qemu-system-aarch64 -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -nographic -serial mon:stdio -chardev pty,id=pl011,logfile=pl011.log -serial chardev:pl011 -kernel kernel8.img
+
+QEMU_GDB:
+	qemu-system-aarch64 -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -nographic -serial mon:stdio -chardev pty,id=pl011,logfile=pl011.log -serial chardev:pl011 -kernel kernel8.img -s -S

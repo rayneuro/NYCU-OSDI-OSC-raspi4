@@ -1,11 +1,11 @@
 #ifndef UART_H
 #define UART_H
 
-#define PERIPHERAL_BASE 0xFE000000
+#define PERIPHERAL_BASE_UART 0xFE000000
 // mini UART
 // bcm2711-peripherals.pdf
 enum {
-    AUX_BASE        = PERIPHERAL_BASE + 0x215000,
+    AUX_BASE        = PERIPHERAL_BASE_UART + 0x215000,
     AUX_IRQ         = AUX_BASE,
     AUX_ENABLES     = AUX_BASE + 4,
     AUX_MU_IO_REG   = AUX_BASE + 64,
@@ -25,23 +25,23 @@ enum {
 
 // PL011 UART 0
 // bcm2711-peripherals.pdf
-enum {
-    UART0_DR =  PERIPHERAL_BASE + 0x201000,
-    UART0_RSRECR =  PERIPHERAL_BASE + 0x201004,
-    UART0_FR =  PERIPHERAL_BASE + 0x201018, // Flag register
-    UART0_ILPR = PERIPHERAL_BASE + 0x201020, // Not in use
-    UART0_IBRD = PERIPHERAL_BASE +  0x201024, //Integer Baud rate divisor
-    UART0_FBRD = PERIPHERAL_BASE + 0x201028, // Fractional Baud rate divisor
-    UART0_LCRH = PERIPHERAL_BASE +  0x20102C,  // Line Control
-    UART0_CR = PERIPHERAL_BASE + 0x201030, // Control register
-    UART0_IMSC = PERIPHERAL_BASE +  0x201038, // Interrupt Mask Set Clear Register
-    UART0_ICR = PERIPHERAL_BASE + 0x201044 // Interrupt Clear Register   
-};
+#define  UART0_DR   PERIPHERAL_BASE_UART + 0x201000
+#define  UART0_RSRECR PERIPHERAL_BASE_UART + 0x201004
+#define  UART0_FR   PERIPHERAL_BASE_UART + 0x201018 // Flag register
+#define  UART0_ILPR  PERIPHERAL_BASE_UART + 0x201020 // Not in use
+#define  UART0_IBRD  PERIPHERAL_BASE_UART +  0x201024 //Integer Baud rate divisor
+#define  UART0_FBRD  PERIPHERAL_BASE_UART + 0x201028 // Fractional Baud rate divisor
+#define  UART0_LCRH  PERIPHERAL_BASE_UART +  0x20102C  // Line Control
+#define  UART0_CR  PERIPHERAL_BASE_UART + 0x201030 // Control register
+#define  UART0_IMSC  PERIPHERAL_BASE_UART +  0x201038 // Interrupt Mask Set Clear Register
+#define  UART0_ICR  PERIPHERAL_BASE_UART + 0x201044 // Interrupt Clear Register   
+
 
 void uart_init();
 unsigned char uart_readByte();
-unsigned int uart_isReadByteReady();
-void uart_writeByteBlocking(unsigned char ch);
+unsigned int uart_isReadByteNotReady();
+unsigned int uart_isWriteByteNotReady();
+void uart_writeByteBlockingActual(unsigned char ch);
 void uart_write_char(unsigned char ch);
 void uart_puts(char *buffer);
 void uart_CR();

@@ -42,17 +42,17 @@ void uart_init() {
     mmio_write(UART0_CR, (1 << 0) | (1 << 8) | (1 << 9) | (1 << 4));    // enable Tx, Rx, FIFO
 }
 
-unsigned int uart_isReadByteReady()  { return mmio_read(AUX_MU_LSR_REG) & 0x01; }
-unsigned int uart_isWriteByteReady() { return mmio_read(AUX_MU_LSR_REG) & 0x20; }
+unsigned int uart_isReadByteNotReady()  { return mmio_read(UART0_FR) & (1 << 4); }
+unsigned int uart_isWriteByteNotReady() {  return mmio_read(UART0_FR) & (1 << 5); }
 
 unsigned char uart_readByte() {
-    while (!uart_isReadByteReady());
-    return (unsigned char)mmio_read(AUX_MU_IO_REG);
+    while (uart_isReadByteNotReady());
+    return (unsigned char)mmio_read(UART0_DR);
 }
 
 void uart_writeByteBlockingActual(unsigned char ch) {
-    while (!uart_isWriteByteReady()); 
-    mmio_write(AUX_MU_IO_REG, (unsigned int)ch);
+    while (!uart_isWriteByteNotReady()); 
+    mmio_write(UART0_DR, (unsigned int)ch);
 }
 
 void uart_write_char(unsigned char ch){

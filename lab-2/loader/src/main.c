@@ -3,8 +3,7 @@
 void main()
 {
     int size=0;
-    char *kernel;
-    mmio_write(kernel,(char *)0x80000);
+    char *kernel = (char *)0x80000;
 
     // set up serial console
     uart_init();

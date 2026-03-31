@@ -19,23 +19,27 @@ _start:
     // We're not on the main core, so hang in an infinite wait loop
 1:  wfe
     b       1b
-2:  // We're on the main core!
 
- 
+2:  // We're on the main core!
     // relocate our code from load address to link address
     ldr     x1, =0x80000
-    ldr     x2, =_start
+    ldr     x2, =_loader_start
     ldr     w3, =__loader_size
+
 1:  ldr     x4, [x1], #8
     str     x4, [x2], #8
     sub     w3, w3, #1
     cbnz    w3, 1b
 
     // set stack before our code
-    ldr     x1, =_start
+    ldr     x1, =relocated
+    br      x4
+
+relocated:
+    ldr     x1, =__stack_top
     mov     sp, x1
 
-    // clear bss
+    // clear bss section
     ldr     x1, =__bss_start
     ldr     w2, =__bss_size
 3:  cbz     w2, 4f
@@ -44,6 +48,6 @@ _start:
     cbnz    w2, 3b
 
     // jump to relocated C code, should not return
-4:  bl      main-1024
+4:  bl      main
     // for failsafe, halt this core too
     b       1b

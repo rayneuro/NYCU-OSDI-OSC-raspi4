@@ -45,18 +45,12 @@ void command_hello()
 void command_help()
 {
     uart_puts("Supported commands:\n");
-    
     uart_puts("\thelp        : Show this help message\n");
-    
     uart_puts("\ttimestamp   : Show current timestamp\n");
-
     uart_puts("\thello       : Print Hello world\n");
-
     uart_puts("\tboardvision : Print board vision\n");
-
     uart_puts("\tVC address  : Print video core address\n");
 
-    uart_puts("\tload image  : Load the kernel image")
     
 }
 

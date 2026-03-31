@@ -33,9 +33,10 @@ _start:
 
     // set stack before our code
     ldr     x1, =relocated
-    br      x4
+    br      x1
 
 relocated:
+    relocated_entry:
     ldr     x1, =__stack_top
     mov     sp, x1
 

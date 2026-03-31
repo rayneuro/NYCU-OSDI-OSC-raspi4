@@ -3,7 +3,7 @@ LD 			= aarch64-linux-gnu-ld
 OBJ_CPY 	= aarch64-linux-gnu-objcopy
 EMULATOR	= qemu-system-aarch64
 
-CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles -mcpu=cortex-a72+nosimd -fno-stack-protector -fno-stack-check 
+CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles -mcpu=cortex-a72+nosimd -fno-stack-protector -fno-stack-check -g
 
 SRCDIR 		= src
 INCLUDE_DIR = inc

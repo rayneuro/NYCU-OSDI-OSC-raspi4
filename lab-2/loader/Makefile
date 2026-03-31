@@ -30,8 +30,7 @@ QEMU: # Add -s -S to enable gdb debugging and -device loader to load the kernel 
 	qemu-system-aarch64 -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -nographic -serial mon:stdio -chardev pty,id=pl011,logfile=pl011.log -serial chardev:pl011 -kernel kernel8.img
 
 QEMU_GDB:
-	qemu-system-aarch64 -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -nographic -serial mon:stdio -s -S -kernel kernel8.img
-
+	qemu-system-aarch64 -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -nographic -serial mon:stdio -chardev pty,id=pl011,logfile=pl011.log -serial chardev:pl011 -s -S -kernel kernel8.img
 ARM_GDB:
-	aarch64-elf-gdb kernel8.elf
+	gdb-multiarch kernel8.elf
 

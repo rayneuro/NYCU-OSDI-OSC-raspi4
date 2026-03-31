@@ -4,9 +4,9 @@ SECTIONS
 
     .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
     /* Loader 主體搬到高位址 */
-    //. = 0x200000;
+    . = 0x200000;
     PROVIDE(_loader_start = .);
-    
+    PROVIDE(_code = .);
     .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
     PROVIDE(_data = .);
     .data : { *(.data .data.* .gnu.linkonce.d*) }

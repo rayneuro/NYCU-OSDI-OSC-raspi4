@@ -9,11 +9,22 @@
 | shell.c | Execute start shell |
 | string.c| Deal with string |
 
-### Makefile
+### Makefile build
+make
+
+
+### Run on QEMU
+make QEMU
 
 
 
-### Display
+### Shell command
+| Command    | Description       |
+|---------| ------------------------|
+| hello      | Hello World          |
+| timestamp  | Print current timestamp  |
+| help       | Print all avaliable commands | 
+| reboot     | reset raspi4b           |
 
 
 
@@ -22,3 +33,5 @@
 1. Is it reasonable to accelerate booting speed by parallel programming during the initialization stage?
 
 2. Point out the difference between bare-metal programming and programming on top of operating system.
+
+

@@ -54,7 +54,7 @@ unsigned char uart_readByte() {
 }
 
 void uart_writeByteBlockingActual(unsigned char ch) {
-    while (!uart_isWriteByteNotReady()); 
+    while (uart_isWriteByteNotReady()); 
     mmio_write(UART0_DR, (unsigned int)ch);
 }
 

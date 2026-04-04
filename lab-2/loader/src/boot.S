@@ -1,10 +1,9 @@
-.section ".text.boot"  // Make sure the linker puts this at the start of the kernel image
+.section ".text.boot"
 
-.global _start  // Execution starts here
-
+.global _start
 
 _start:
-    // Save arguments in registers (will need it for new kernel)
+    // save arguments in registers (we will need them later for the new kernel)
     // I choosed x10-x13 because instructions generated from C by gcc does not
     // touch them. You can check that with "aarch64-elf-objdump -d kernel8.elf"
     mov     x10, x0
@@ -12,35 +11,29 @@ _start:
     mov     x12, x2
     mov     x13, x3
 
-    // Check processor ID is zero (executing on main core), else hang
+    // read cpu id, stop slave cores
     mrs     x1, mpidr_el1
     and     x1, x1, #3
     cbz     x1, 2f
-    // We're not on the main core, so hang in an infinite wait loop
+    // cpu id > 0, stop
 1:  wfe
     b       1b
+2:  // cpu id == 0
 
-2:  // We're on the main core!
     // relocate our code from load address to link address
     ldr     x1, =0x80000
-    ldr     x2, =_loader_start
+    ldr     x2, =_start
     ldr     w3, =__loader_size
-
 1:  ldr     x4, [x1], #8
     str     x4, [x2], #8
     sub     w3, w3, #1
     cbnz    w3, 1b
 
     // set stack before our code
-    ldr     x1, =relocated
-    br      x1
-
-relocated:
-    relocated_entry:
-    ldr     x1, =__stack_top
+    ldr     x1, =_start
     mov     sp, x1
 
-    // clear bss section
+    // clear bss
     ldr     x1, =__bss_start
     ldr     w2, =__bss_size
 3:  cbz     w2, 4f

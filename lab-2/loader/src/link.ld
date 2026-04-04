@@ -1,12 +1,8 @@
 SECTIONS
 {
-    . = 0x80000;     /* Kernel load address for AArch64 */
-
-    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
-    /* Loader 主體搬到高位址 */
-    . = 0x200000;
-    PROVIDE(_loader_start = .);
+    . = 0x80000;
     PROVIDE(_code = .);
+    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
     .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
     PROVIDE(_data = .);
     .data : { *(.data .data.* .gnu.linkonce.d*) }
@@ -17,15 +13,9 @@ SECTIONS
         *(COMMON)
         __bss_end = .;
     }
-    PROVIDE(_loader_end = .);
-    PROVIDE(_end = .);
-   
-    __loader_size = (_loader_end - _loader_start) /8;   /*  8 bytes unit */
-    
-    __bss_size = (__bss_end - __bss_start) /8;
-
-    PROVIDE(__stack_top = 0x400000);     /* 4MB (0x400000) lots of space*/
-
+    _end = .;
 
    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }
+__bss_size = (__bss_end - __bss_start)>>3;
+__loader_size = (_end - _code)>>3;

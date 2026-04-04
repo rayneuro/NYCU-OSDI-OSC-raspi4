@@ -18,6 +18,18 @@ again:
     uart_write_char('4');
     uart_write_char('\r');
     uart_write_char('\n');
+
+    while(uart_readByte() != 'y')
+    {
+        uart_write_char('R');
+        uart_write_char('B');
+        uart_write_char('I');
+        uart_write_char('N');
+        uart_write_char('6');
+        uart_write_char('4');
+        uart_write_char('\r');
+        uart_write_char('\n');
+    }
     // notify raspbootcom to send the kernel
     uart_write_char(3);
     uart_write_char(3);

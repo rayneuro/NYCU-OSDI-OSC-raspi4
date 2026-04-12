@@ -1,0 +1,1 @@
+Need to modify the config.txt to enable uart0

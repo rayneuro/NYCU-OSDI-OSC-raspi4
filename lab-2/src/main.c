@@ -8,8 +8,8 @@ int main()
     uart_init();
 
     // set up framebuffer
-    framebuffer_init();
-    framebuffer_show_pic();
+    //framebuffer_init();
+    //framebuffer_show_pic();
     
     // say hello
     uart_puts("Hello World!\n");

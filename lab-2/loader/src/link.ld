@@ -1,21 +1,27 @@
 SECTIONS
 {
-    . = 0x80000;
-    PROVIDE(_code = .);
-    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
-    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
-    PROVIDE(_data = .);
-    .data : { *(.data .data.* .gnu.linkonce.d*) }
+    . = 0x60000;                    /* same as config.txt kernel_address */
+
+    .text.boot : {
+        KEEP(*(.text.boot))
+    }
+
+    . = ALIGN(0x10);
+
+    .text   : { *(.text .text.*) }
+    .rodata : { *(.rodata .rodata.*) }
+    .data   : { *(.data .data.*) }
+
+    . = ALIGN(0x10);
+    __bss_start = .;
     .bss (NOLOAD) : {
-        . = ALIGN(16);
-        __bss_start = .;
         *(.bss .bss.*)
         *(COMMON)
-        __bss_end = .;
     }
+    __bss_end = .;
+
     _end = .;
 
-   /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
+    /* Stack 必須放在 bootloader 上方，但 kernel 下方 */
+    PROVIDE(_stack_top = 0x78000);   /* 建議值：給約 32KB stack */
 }
-__bss_size = (__bss_end - __bss_start)>>3;
-__loader_size = (_end - _code)>>3;

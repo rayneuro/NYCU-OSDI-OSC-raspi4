@@ -10,26 +10,8 @@ void main()
 
     // say hello. To reduce loader size I removed uart_puts()
 again:
-    uart_write_char('R');
-    uart_write_char('B');
-    uart_write_char('I');
-    uart_write_char('N');
-    uart_write_char('6');
-    uart_write_char('4');
-    uart_write_char('\r');
-    uart_write_char('\n');
-
-    while(uart_readByte() != 'y')
-    {
-        uart_write_char('R');
-        uart_write_char('B');
-        uart_write_char('I');
-        uart_write_char('N');
-        uart_write_char('6');
-        uart_write_char('4');
-        uart_write_char('\r');
-        uart_write_char('\n');
-    }
+    uart_puts("RPI64 Bootloader v1.0\r\n");
+    
     // notify raspbootcom to send the kernel
     uart_write_char(3);
     uart_write_char(3);
@@ -53,6 +35,8 @@ again:
 
     // read the kernel
     while(size--) *kernel++ = uart_readByte();
+    uart_puts("Kernel received successfully!\r\n");
+    uart_puts("Jumping to kernel at 0x80000...\r\n");
 
     // restore arguments and jump to the new kernel.
     asm volatile (

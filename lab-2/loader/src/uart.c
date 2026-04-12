@@ -27,7 +27,7 @@ void uart_init() {
     mbox[7] = 0;                // clear turbo
     mbox[8] = TAGS_REQ_END;
     
-    mbox_call( MBOX_CH_PROP, &mbox);
+    mbox_call( MBOX_CH_PROP, mbox);
 
     /* map UART0 to GPIO pins */
     //r =*GPFSEL1;
@@ -38,9 +38,9 @@ void uart_init() {
 
 
     mmio_write(UART0_ICR , 0x7FF);    // clear interrupts
-    // baud rate = UART_CLK / (16 × (IBRD + FBRD / 64))
+ 
     mmio_write(UART0_IBRD , 2);       // 115200 baud
-    mmio_write(UART0_FBRD , 0xB);
+    mmio_write(UART0_FBRD , 0xB);      // Baud Rate = UARTCLK / (16 × (IBRD + FBRD/64)) , Divisor = UARTCLK / (16 × 115200) = 4,000,000 / (16 × 115200) ≈ 2.170138
     mmio_write(UART0_LCRH, (3 << 5) | (1 << 4)); // Set up WLEN（Word Length）3 -> 8 bits and FEN（FIFO Enable）= 1 → open TX/RX FIFO
     mmio_write(UART0_CR, (1 << 0) | (1 << 8) | (1 << 9) | (1 << 4));    // enable Tx, Rx, FIFO
 }

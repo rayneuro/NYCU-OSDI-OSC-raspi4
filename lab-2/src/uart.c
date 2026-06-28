@@ -1,6 +1,7 @@
 #include "gpio.h"
 #include "uart.h"
 #include "mailbox.h"
+#include "ctype.h"
 
 #define AUX_MU_BAUD(baud) ((AUX_UART_CLOCK/(baud*8))-1) // Set up for mini UART1
 
@@ -57,6 +58,22 @@ void uart_puts(char * buffer){
        if (*buffer == '\n') uart_write_char('\r');
        uart_write_char(*buffer++);
        
+    }
+}
+
+/**
+ * Display a binary value in hexadecimal
+ */
+void uart_hex(unsigned int d) {
+    unsigned int n;
+    int c;
+    uart_puts("0x");
+    for(c=28;c>=0;c-=4) {
+        // get highest tetrad
+        n=(d>>c)&0xF;
+        // 0-9 => '0'-'9', 10-15 => 'A'-'F'
+        n+=n>9?0x57:0x30;
+        uart_write_char(n);
     }
 }
 

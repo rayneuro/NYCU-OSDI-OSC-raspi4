@@ -1,5 +1,6 @@
 #ifndef UART_H
 #define UART_H
+#include <stdint.h>
 
 
 // mini UART
@@ -48,5 +49,5 @@ void uart_write_char(unsigned char ch);
 void uart_puts(char *buffer);
 void uart_CR();
 int uart_getint();
-
+void uart_hex(unsigned int d);
 # endif

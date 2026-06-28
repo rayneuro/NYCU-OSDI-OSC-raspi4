@@ -1,8 +1,8 @@
 #ifndef _MAILBOX_H_
 #define _MAILBOX_H_
 #include "gpio.h"
-#include "type.h"
 #include "framebuffer.h"
+#include <stdint.h>
 
 
 

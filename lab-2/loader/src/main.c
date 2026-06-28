@@ -34,9 +34,23 @@ again:
     uart_write_char('K');
 
     // read the kernel
-    while(size--) *kernel++ = uart_readByte();
-    uart_puts("Kernel received successfully!\r\n");
-    uart_puts("Jumping to kernel at 0x80000...\r\n");
+    while(size--) {
+        
+        *kernel++ = uart_readByte();
+        uart_write_char('s');
+        uart_write_char('d');
+    
+    }
+    uart_write_char('K');
+    uart_write_char('S');
+    uart_write_char('U');
+    uart_write_char('C');
+    uart_write_char('C');
+    uart_write_char('E');
+    uart_write_char('S');
+    uart_write_char('S');
+    uart_write_char('\r');
+    uart_write_char('\n');
 
     // restore arguments and jump to the new kernel.
     asm volatile (

@@ -1,7 +1,9 @@
 #include "uart.h"
 #include "shell.h"
 #include "framebuffer.h"
+#include "dtb.h"
 
+extern void *_dtb_ptr;
 int main()
 {
     // set up serial console
@@ -12,6 +14,7 @@ int main()
     //framebuffer_show_pic();
     
     // say hello
+    fdt_traverse(get_cpio_addr,_dtb_ptr);
     uart_puts("Hello World!\n");
 
     // start shell

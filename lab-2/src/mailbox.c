@@ -1,6 +1,5 @@
 #include "mailbox.h"
 #include "gpio.h"
-#include "type.h"
 #include "framebuffer.h"
 
 

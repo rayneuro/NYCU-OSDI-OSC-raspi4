@@ -1,6 +1,6 @@
 #include "string.h"
 #include "math.h"
-#include "type.h"
+#include <stdint.h>
 
 int strcmp ( char * s1, char * s2 )
 {

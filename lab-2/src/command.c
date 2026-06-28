@@ -4,7 +4,8 @@
 #include "uart.h"
 #include "time.h"
 #include "command.h"
-#include "type.h"
+#include "cpio.h"
+#include "mailbox.h"
 
 
 // PM Registers
@@ -186,6 +187,7 @@ void command_load_image()
     );
 }
 
-
-
+void command_list_file(){
+    cpio_ls();
+}
 

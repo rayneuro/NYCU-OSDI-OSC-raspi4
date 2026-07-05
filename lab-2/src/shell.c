@@ -3,6 +3,7 @@
 #include "uart.h"
 #include "string.h"
 
+extern void *_dtb_ptr;
 
 void shell_init(){
     int buffer_counter = 0;

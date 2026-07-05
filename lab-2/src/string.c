@@ -56,6 +56,22 @@ void itoa (int x, char str[], int d)
     reverse(str); 
 } 
 
+unsigned long utils_atoi(const char *s, int char_size) {
+    unsigned long num = 0;
+    for (int i = 0; i < char_size; i++) {
+        num = num * 16;
+        if (*s >= '0' && *s <= '9') {
+            num += (*s - '0');
+        } else if (*s >= 'A' && *s <= 'F') {
+            num += (*s - 'A' + 10);
+        } else if (*s >= 'a' && *s <= 'f') {
+            num += (*s - 'a' + 10);
+        }
+        s++;
+    }
+    return num;
+}
+    
 // https://www.geeksforgeeks.org/convert-floating-point-number-string/
 void ftoa(float n, char* res, int afterpoint) 
 { 
@@ -122,3 +138,8 @@ void itohex_str( uint64_t d, int size, char * s )
     s[i] = '\0';
 }
 
+size_t utils_strlen(const char *s) {
+    size_t i = 0;
+	while (s[i]) i++;
+	return i+1;
+}

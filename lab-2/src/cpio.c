@@ -13,8 +13,8 @@ char *findFile(char *name)
             return addr;
         }
         struct cpio_header* header = (struct cpio_header *)addr;
-        unsigned long pathname_size = atoi(header->c_namesize,(int)sizeof(header->c_namesize));;
-        unsigned long file_size =  atoi(header->c_filesize,(int)sizeof(header->c_filesize));
+        unsigned long pathname_size = utils_atoi(header->c_namesize,(int)sizeof(header->c_namesize));;
+        unsigned long file_size =  utils_atoi(header->c_filesize,(int)sizeof(header->c_filesize));
         unsigned long headerPathname_size = sizeof(struct cpio_header) + pathname_size;
 
         utils_align(&headerPathname_size,4); 

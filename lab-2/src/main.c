@@ -10,12 +10,11 @@ int main()
     uart_init();
 
     // set up framebuffer
-    //framebuffer_init();
-    //framebuffer_show_pic();
-    
+    framebuffer_init();
+    framebuffer_show_pic();
     // say hello
-    fdt_traverse(get_cpio_addr,_dtb_ptr);
-    uart_puts("Hello World!\n");
+    //fdt_traverse(get_cpio_addr,_dtb_ptr);
+    uart_puts("Hlelo World!\n");
 
     // start shell
     shell_init();

@@ -19,6 +19,10 @@ void framebuffer_show_pic()
     unsigned char *ptr = fb.fb_addr;
     char *data = img_data, pixel[4];
 
+    if (!ptr) {
+        return;
+    }
+
     ptr += ( fb.height - img_height ) / 2 * fb.pitch + ( fb.width - img_width ) * 2;
 
     for( y = 0; y < img_height; y++ )

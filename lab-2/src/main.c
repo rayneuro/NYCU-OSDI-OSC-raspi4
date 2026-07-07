@@ -13,7 +13,7 @@ int main()
     framebuffer_init();
     framebuffer_show_pic();
     // say hello
-    //fdt_traverse(get_cpio_addr,_dtb_ptr);
+    fdt_traverse(get_cpio_addr,_dtb_ptr);
     uart_puts("Hlelo World!\n");
 
     // start shell

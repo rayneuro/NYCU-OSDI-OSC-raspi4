@@ -122,11 +122,14 @@ int fdt_traverse(fdt_callback cb,void * _dtb){
 
 //5. Implement the initramfs_callback function:
 void get_cpio_addr(int token,const char* name,const void* data,uint32_t size){
-	UNUSED(size);
-	if(token==FDT_PROP && strcmp((char *)name,"linux,initrd-start")){
-		cpio_addr = (char*)(uintptr_t)fdt_u32_le2be(data);
+	if(token==FDT_PROP && strcmp((char *)name,"linux,initrd-start") == 0){
+		uintptr_t addr = fdt_u32_le2be(data);
+		if (size == 8) {
+			addr = fdt_u32_le2be((const char *)data + 4);
+		}
+		cpio_addr = (char*)addr;
 		uart_puts("cpio address is at: ");
-		uart_hex((uintptr_t)fdt_u32_le2be(data));
+		uart_hex((unsigned int)addr);
 		uart_write_char('\n');
 	}
 }

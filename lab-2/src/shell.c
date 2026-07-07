@@ -5,6 +5,20 @@
 
 extern void *_dtb_ptr;
 
+void read_command(char* buffer) {
+	int index = 0;
+	while(1) {
+		buffer[index] = uart_readByte();
+		uart_write_char(buffer[index]);
+		if(buffer[index] == '\n') {
+			buffer[index] = '\0';
+			buffer[index+1] = '\n';
+			break;
+		}
+		index++;
+	}
+}
+
 void shell_init(){
     int buffer_counter = 0;
     char input_char;
@@ -61,6 +75,7 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
             else if(!strcmp(buf, "VC address")) command_vc_base_addr();
             else if(!strcmp(buf, "loadimg")) command_load_image();
             else if(!strcmp(buf,"ls")) command_list_file();
+            else if(!strcmp(buf,"cat")) shell_cpio_cat();
             else command_not_found(buf);
         }
         (*counter) =0;
@@ -94,3 +109,6 @@ enum SHELL_CHARACTER parse_character(char c){
 }
 
 
+void shell_cpio_cat(){
+
+}

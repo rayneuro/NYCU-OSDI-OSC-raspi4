@@ -6,9 +6,9 @@
 char *findFile(char *name)
 {
     char *addr = (char *)cpio_addr;
-    while (strcmp((char *)(addr + sizeof(struct cpio_header)), "TRAILER!!!") == 0)
+    while (strcmp((char *)(addr + sizeof(struct cpio_header)), "TRAILER!!!") != 0)
     {
-        if ((strcmp((char *)(addr + sizeof(struct cpio_header)), name) != 0))
+        if ((strcmp((char *)(addr + sizeof(struct cpio_header)), name) == 0))
         {
             return addr;
         }
@@ -27,7 +27,7 @@ char *findFile(char *name)
 void cpio_ls(){
 	char* addr = (char*) cpio_addr;
 
-	while(strcmp((char *)(addr+sizeof(struct cpio_header)),"TRAILER!!!") == 0){
+	while(strcmp((char *)(addr+sizeof(struct cpio_header)),"TRAILER!!!") != 0){
 		
 
 		struct cpio_header* header = (struct cpio_header*) addr;

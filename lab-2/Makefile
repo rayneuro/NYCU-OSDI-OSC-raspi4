@@ -38,7 +38,7 @@ start.o: start.S
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 QEMU:
-	qemu-system-aarch64 -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -nographic -serial mon:stdio -chardev pty,id=pl011,logfile=pl011.log -serial chardev:pl011 -kernel kernel8.img -initrd initramfs.cpio
+	qemu-system-aarch64 -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -nographic -serial mon:stdio -chardev pty,id=pl011,logfile=pl011.log -serial chardev:pl011 -kernel kernel8.img -initrd initramfs.cpio -dtb bcm2711-rpi-4-b.dtb
 
 QEMU_GDB:
 	qemu-system-aarch64 -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -nographic -serial mon:stdio -chardev pty,id=pl011,logfile=pl011.log -serial chardev:pl011 -kernel kernel8.img -s -S

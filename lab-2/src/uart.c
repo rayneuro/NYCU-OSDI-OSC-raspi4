@@ -10,19 +10,10 @@ unsigned int uart_output_queue_write = 0;
 unsigned int uart_output_queue_read = 0;
 
 void uart_init() {
-    register unsigned int r;
-
     /* initialize UART */
     mmio_write(UART0_CR , 0);         // turn off UART0
 
-    /*Set clock for PL011 UART0*/
-    mbox_set_clock_to_PL011();
-
-
     /* map UART0 to GPIO pins */
-    //r =*GPFSEL1;
-    //r &= ~((7<<12)|(7<<15)); // gpio14, gpio15
-    //r |= (4<<12)|(4<<15);    // alt0
     gpio_useAsAlt0(14);
     gpio_useAsAlt0(15);
 

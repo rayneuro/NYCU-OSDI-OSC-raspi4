@@ -53,6 +53,10 @@ void command_help()
     uart_puts("\tboardvision : Print board vision\n");
     uart_puts("\tVC address  : Print video core address\n");
     uart_puts("\tloadimg     : Load the kernel image to target address\n");
+    uart_puts("\tls          : list the file \n");
+    uart_puts("\tcat         : list the file \n");
+    uart_puts("\tdtb	     :print device tree\n");
+    uart_puts("\tmalloc	     :give dynamic memory space\n");
 }
 
 void command_reboot()
@@ -190,4 +194,3 @@ void command_load_image()
 void command_list_file(){
     cpio_ls();
 }
-

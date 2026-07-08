@@ -1,6 +1,6 @@
 #ifndef SHELL_H
 #define SHELL_H
-#define MAX_BUFFER_LEN 128
+#define MAX_BUFFER_LEN 256
 enum SHELL_CHARACTER
 {
     // ASCII control characters

@@ -10,9 +10,9 @@ void read_command(char* buffer) {
 	while(1) {
 		buffer[index] = uart_readByte();
 		uart_write_char(buffer[index]);
-		if(buffer[index] == '\n') {
+		if(buffer[index] == '\r') {
 			buffer[index] = '\0';
-			buffer[index+1] = '\n';
+			buffer[index+1] = '\r';
 			break;
 		}
 		index++;
@@ -76,6 +76,8 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
             else if(!strcmp(buf, "loadimg")) command_load_image();
             else if(!strcmp(buf,"ls")) command_list_file();
             else if(!strcmp(buf,"cat")) shell_cpio_cat();
+            else if(!strcmp(buf,"malloc")) command_malloc();
+            else if(!strcmp(buf,"dtb")) command_dtb();
             else command_not_found(buf);
         }
         (*counter) =0;
@@ -110,5 +112,8 @@ enum SHELL_CHARACTER parse_character(char c){
 
 
 void shell_cpio_cat(){
-
+    uart_puts("File:  ");
+    char file_name[MAX_BUFFER_LEN];
+    read_command(file_name);
+    cpio_cat(file_name);
 }

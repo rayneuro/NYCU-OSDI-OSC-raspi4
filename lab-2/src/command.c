@@ -6,8 +6,9 @@
 #include "command.h"
 #include "cpio.h"
 #include "mailbox.h"
+#include "dtb.h"
 
-
+extern void *_dtb_ptr;
 // PM Registers
 // using a macro is safer than using an enum
 #define PM_BASE             (0xFE000000UL + 0x100000UL)
@@ -55,8 +56,8 @@ void command_help()
     uart_puts("\tloadimg     : Load the kernel image to target address\n");
     uart_puts("\tls          : list the file \n");
     uart_puts("\tcat         : list the file \n");
-    uart_puts("\tdtb	     :print device tree\n");
-    uart_puts("\tmalloc	     :give dynamic memory space\n");
+    uart_puts("\tdtb	     : print device tree\n");
+    uart_puts("\tmalloc	     : give dynamic memory space\n");
 }
 
 void command_reboot()
@@ -193,4 +194,26 @@ void command_load_image()
 
 void command_list_file(){
     cpio_ls();
+}
+
+void command_dtb(){
+    fdt_traverse(print_dtb,_dtb_ptr);
+}
+
+void command_malloc(){
+    char *a = simple_malloc(sizeof("9876"));
+    char *b = simple_malloc(sizeof("345"));
+    a[0] = '9';
+	a[1] = '8';
+	a[2] = '7';
+	a[3] = '6';
+	a[4] = '\0';
+	b[0] = '3';
+	b[1] = '4';
+	b[2] = '5';
+	b[3] = '\0';
+	uart_puts(a);
+    uart_write_char('\n');
+	uart_puts(b);
+	uart_write_char('\n');	 
 }

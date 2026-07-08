@@ -9,4 +9,6 @@ void command_vc_base_addr();
 void command_board_revision();
 void command_load_image();
 void command_list_file();
+void command_dtb();
+void command_malloc();
 #endif

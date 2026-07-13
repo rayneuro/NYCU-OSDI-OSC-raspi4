@@ -2,7 +2,8 @@
 #define IRQ_H
 
 // 1. Set ARM Local register base Pi4 to 0xFF800000
-#define PERIPHERAL_BASE = 0xFE000000,
+#define PERIPHERAL_BASE = 0xFE000000
+#define ARM_LOCAL_BASE 0xFF800000
 #define CORE0_TIMER_IRQ_CTRL    ((volatile unsigned int*)(MMIO + 0x40))
 #define CORE0_INTERRUPT_SOURCE  ((volatile unsigned int*)(ARM_LOCAL_BASE + 0x60))
 
@@ -14,5 +15,12 @@
 #define GICD_ISENABLER(n)       ((volatile unsigned int*)(GIC_DIST_BASE + 0x100 + (n)*4))
 #define GICC_IAR                ((volatile unsigned int*)(GIC_CPU_BASE + 0x00C))
 #define GICC_EOIR               ((volatile unsigned int*)(GIC_CPU_BASE + 0x010))
+
+#define GICD_CTLR       ((volatile uint32_t *)(GIC_DIST_BASE + 0x000))
+#define GICD_IPRIORITYR ((volatile uint32_t *)(GIC_DIST_BASE + 0x400))
+#define GICD_ITARGETSR  ((volatile uint32_t *)(GIC_DIST_BASE + 0x800))
+
+#define GICC_CTLR       ((volatile uint32_t *)(GIC_CPU_BASE + 0x000))
+#define GICC_PMR        ((volatile uint32_t *)(GIC_CPU_BASE + 0x004))
 
 #endif

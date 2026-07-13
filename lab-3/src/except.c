@@ -84,52 +84,28 @@ void timer_irq_handler() {
 
 }
 
-void uart_transmit_handler() {
-	mmio_write(AUX_MU_IER, mmio_read(AUX_MU_IER) | (0x2));	
-	
-	if (uart_write_buffer[uart_write_index-1] == '\r'){
-		uart_write_buffer[uart_write_index++] = '\n';
-		uart_write_buffer[uart_write_index] = '\0';
-	}
+static void uart0_irq_handler(void)
+{
+    uint32_t status = mmio_read(UART0_MIS);
 
-	// Send data from the write buffer
-    while (uart_write_head != uart_write_index) {
-        mmio_write(AUX_MU_IO, uart_write_buffer[uart_write_head++]);
-        if (uart_write_index >= UART_BUFFER_SIZE) {
-            uart_write_index = 0;
+    /*
+     * RX interrupt or receive-timeout interrupt。
+     * Keep reading, until  RX FIFO empty。
+     */
+    if (status & (UART_RXIM | UART_RTIM)) {
+        while (!(mmio_read(UART0_FR) & UART_RXFE)) {
+            unsigned char ch =
+                (unsigned char)(mmio_read(UART0_DR) & 0xff);
+
+            uart_write_char(ch);
         }
-		
-		
-		if (uart_write_head == uart_write_index) {
-			mmio_write(AUX_MU_IER, mmio_read(AUX_MU_IER) & ~0x2);
-			if(uart_read_buffer[uart_read_index-1] == '\r'){
-				uart_read_buffer[uart_read_index-1] = '\0';
-				parse_command(uart_read_buffer);
-				uart_read_index = 0;
-				uart_write_index = 0;
-				uart_write_head = 0;
-			}	
-		}	
-	} 
-	mmio_write(AUX_MU_IER, mmio_read(AUX_MU_IER) | 0x1);
-}
 
-void uart_receive_handler() {
-	
-	// Read data(8 bytes) and store it in the read buffer
-    char data = mmio_read(AUX_MU_IO) & 0xff;
-    uart_read_buffer[uart_read_index++] = data;
-    if (uart_read_index >= UART_BUFFER_SIZE) {
-        uart_read_index = 0;
+        /*
+         * RX interrupt 通常會因 FIFO 被讀空而解除；
+         * receive-timeout interrupt 必須透過 ICR 清除。
+         */
+        mmio_write(UART0_ICR, UART_RXIM | UART_RTIM);
     }
-
-    // Enqueue the received data into the write buffer
-    uart_write_buffer[uart_write_index++] = data;
-    if (uart_write_index >= UART_BUFFER_SIZE) {
-        uart_write_index = 0;
-    }
-
-	create_task(uart_transmit_handler,2);
 }
 
 void irq_except_handler_c() {
@@ -170,4 +146,20 @@ void irq_except_handler_c() {
 	execute_tasks();
 	//asm volatile("msr DAIFClr, 0xf"); // Enable interrupts
 	
+}
+
+void gic_init(void)
+{
+    *GICD_CTLR = 1;
+    *GICC_PMR  = 0xff;
+    *GICC_CTLR = 1;
+
+    /* UART0 priority = 0x80 */
+    ((volatile uint8_t *)GICD_IPRIORITYR)[153] = 0x80;
+
+    /* 將 UART0 interrupt routing 到 CPU0 */
+    ((volatile uint8_t *)GICD_ITARGETSR)[153] = 0x01;
+
+    asm volatile("dsb sy");
+    asm volatile("isb");
 }

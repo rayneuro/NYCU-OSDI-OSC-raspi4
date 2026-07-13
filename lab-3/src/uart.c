@@ -92,3 +92,18 @@ int uart_getint()
 
     return output;
 }
+
+void uart_enable_interrupt(){
+    mmio_write(UART0_ICR, 0x7ff);
+    // Enable RX and TX interrupt for UART0 
+
+    // RX FIFO 與 receive timeout interrupt 
+    mmio_write(UART0_IMSC, UART_RXIM | UART_RTIM);
+
+    /* UART0 INTID 153: ISENABLER[4], bit 25 */
+    *GICD_ISENABLER(UART0_GIC_IRQ_ID / 32) =
+        1U << (UART0_GIC_IRQ_ID % 32);
+
+    asm volatile("dsb sy");
+    asm volatile("isb");
+}

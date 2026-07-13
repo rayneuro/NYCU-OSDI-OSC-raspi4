@@ -1,7 +1,7 @@
 #ifndef UART_H
 #define UART_H
 #include <stdint.h>
-
+#define UART_BUFFER_SIZE 2048
 
 // mini UART
 // bcm2711-peripherals.pdf
@@ -38,7 +38,25 @@ enum {
     UART0_CR = PERIPHERAL_BASE_UART + 0x201030, // Control register
     UART0_IMSC = PERIPHERAL_BASE_UART +  0x201038, // Interrupt Mask Set Clear Register
     UART0_ICR = PERIPHERAL_BASE_UART + 0x201044 // Interrupt Clear Register   
+    UART0_IFLS = PERIPHERAL_BASE_UART + 0x201034, // Interrupt FIFO Level Select Register
+    UART0_IMSC = PERIPHERAL_BASE_UART + 0x201038, // Interrupt Mask Set/Clear Register
+    UART0_RIS  = PERIPHERAL_BASE_UART + 0x20103C, // Raw Interrupt Status Register
+    UART0_MIS  = PERIPHERAL_BASE_UART + 0x201040, //Masked Interrupt Status Register
+    UART0_ICR  = PERIPHERAL_BASE_UART + 0x201044, // Interrupt Clear Register
 };
+
+extern char uart_read_buffer[UART_BUFFER_SIZE];
+extern char uart_write_buffer[UART_BUFFER_SIZE];
+extern int uart_read_index;
+extern int uart_read_head;
+extern int uart_write_index;
+extern int uart_write_head;
+#define UART_RXIM (1U << 4)
+#define UART_TXIM (1U << 5)
+#define UART_RTIM (1U << 6)
+
+#define UART_RXFE (1U << 4)
+#define UART_TXFF (1U << 5)
 
 void uart_init();
 unsigned char uart_readByte();
@@ -50,4 +68,9 @@ void uart_puts(char *buffer);
 void uart_CR();
 int uart_getint();
 void uart_hex(unsigned int d);
+void uart_enable_interrupt();
+int uart_async_read(char *buffer);
+void uart_async_write(const char *buffer, int length);
+void uart_async_send(const char *str);
+
 # endif

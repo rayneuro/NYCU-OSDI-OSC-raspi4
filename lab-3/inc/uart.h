@@ -1,6 +1,7 @@
 #ifndef UART_H
 #define UART_H
 #include <stdint.h>
+#include "irq.h"
 #define UART_BUFFER_SIZE 2048
 
 // mini UART
@@ -36,8 +37,6 @@ enum {
     UART0_FBRD = PERIPHERAL_BASE_UART + 0x201028, // Fractional Baud rate divisor
     UART0_LCRH = PERIPHERAL_BASE_UART +  0x20102C,  // Line Control
     UART0_CR = PERIPHERAL_BASE_UART + 0x201030, // Control register
-    UART0_IMSC = PERIPHERAL_BASE_UART +  0x201038, // Interrupt Mask Set Clear Register
-    UART0_ICR = PERIPHERAL_BASE_UART + 0x201044 // Interrupt Clear Register   
     UART0_IFLS = PERIPHERAL_BASE_UART + 0x201034, // Interrupt FIFO Level Select Register
     UART0_IMSC = PERIPHERAL_BASE_UART + 0x201038, // Interrupt Mask Set/Clear Register
     UART0_RIS  = PERIPHERAL_BASE_UART + 0x20103C, // Raw Interrupt Status Register
@@ -57,6 +56,9 @@ extern int uart_write_head;
 
 #define UART_RXFE (1U << 4)
 #define UART_TXFF (1U << 5)
+#define UART0_GIC_ENABLE_BIT (1U << 25)
+#define UART0_GIC_IRQ_ID 153U
+
 
 void uart_init();
 unsigned char uart_readByte();

@@ -43,45 +43,47 @@ void except_handler_c() {
 	}
 }
 
-void timer_irq_handler() {
-	//enable core_0_timer
-	unsigned int* address = (unsigned int*) CORE0_TIMER_IRQ_CTRL;
-	*address = 2;
+void timer_irq_handler(void)
+{
+    uint64_t current_time;
 
-	asm volatile("msr cntp_ctl_el0,%0"::"r"(0));
-	// Disable interrupts to protect critical section
-	asm volatile("msr DAIFSet, 0xf");
+    /* Pause halt the timer，避免持續觸發 */
+    asm volatile(
+        "msr cntp_ctl_el0, %0"
+        :
+        : "r"(0UL)
+    );
 
-	uint64_t current_time;
-	asm volatile("mrs %0, cntpct_el0":"=r"(current_time));
+    asm volatile(
+        "mrs %0, cntpct_el0"
+        : "=r"(current_time)
+    );
 
-	while(timer_head && timer_head->expiry <= current_time) {
-		timer_t *timer = timer_head;
+    while (timer_head && timer_head->expiry <= current_time) {
+        timer_t *expired = timer_head;
 
-		//Execute the callback
-		timer->callback(timer->data);
- 
-		// Remove timer from the list
-        timer_head = timer->next;
-        if (timer_head) {
+        timer_head = expired->next;
+        if (timer_head)
             timer_head->prev = NULL;
-        }
-		
-		//free timer
-		
-		// Reprogram the hardware timer if there are still timers left
-		if(timer_head) {
-			asm volatile("msr cntp_cval_el0, %0"::"r"(timer_head->expiry));
-			asm volatile("msr cntp_ctl_el0,%0"::"r"(1));
-		} else {
-			asm volatile("msr cntp_ctl_el0,%0"::"r"(0));
-		}
-	
 
-		//enable interrupt
-		asm volatile("msr DAIFClr,0xf");
-	}
+        expired->callback(expired->data);
 
+        /* This can express expired */
+    }
+
+    if (timer_head) {
+        asm volatile(
+            "msr cntp_cval_el0, %0"
+            :
+            : "r"(timer_head->expiry)
+        );
+
+        asm volatile(
+            "msr cntp_ctl_el0, %0"
+            :
+            : "r"(1UL)
+        );
+    }
 }
 
 static void uart0_irq_handler(void)
@@ -108,46 +110,29 @@ static void uart0_irq_handler(void)
     }
 }
 
-void irq_except_handler_c() {
+void irq_except_handler_c(void)
+{
+    uint32_t iar = *GICC_IAR;
+    uint32_t intid = iar & 0x3ffU;
 
+    switch (intid) {
+    case 153:
+        uart0_irq_handler();
+        break;
 
-	asm volatile("msr DAIFSet, 0xf"); // Disable interrupts
-									  
-	uint32_t irq_pending1 = mmio_read(IRQ_PENDING_1);
-	uint32_t core0_interrupt_source = mmio_read(CORE0_INTERRUPT_SOURCE);	
-	uint32_t iir = mmio_read(AUX_MU_IIR);
+    case GIC_CNTNS_IRQ_ID:
+        timer_irq_handler();
+        break;
 
-	if (core0_interrupt_source & CNTPSIRQ_BIT_POSITION) {
-		
-		//djsable core 0 timer
-		unsigned int* address = (unsigned int*) CORE0_TIMER_IRQ_CTRL;
-		*address = 0;
-
-		create_task(timer_irq_handler,3);
+    default:
+        break;
     }
 
-    // Handle UART interrupt
-    if (irq_pending1 & AUXINIT_BIT_POSTION) {
-         if ((iir & 0x06) == 0x04) {
-			 //Disable receive interrupt
-			 mmio_write(AUX_MU_IER, mmio_read(AUX_MU_IER) & ~(0x01));
-			 create_task(uart_receive_handler,1);
-		 }
-
-		if ((iir & 0x06) == 0x02) {
-			//Disable transmit interrupt
-			//mmio_write(AUX_MU_IER, mmio_read(AUX_MU_IER) & ~(0x02));
-			//create_task(uart_transmit_handler,2);
-		}
-    }	
-	
-	asm volatile("msr DAIFClr, 0xf"); // Enable interrupts
-	
-	execute_tasks();
-	//asm volatile("msr DAIFClr, 0xf"); // Enable interrupts
-	
+    if (intid < 1020U) {
+        *GICC_EOIR = iar;
+        asm volatile("dsb sy" ::: "memory");
+    }
 }
-
 void gic_init(void)
 {
     *GICD_CTLR = 1;
@@ -160,6 +145,24 @@ void gic_init(void)
     /* 將 UART0 interrupt routing 到 CPU0 */
     ((volatile uint8_t *)GICD_ITARGETSR)[153] = 0x01;
 
-    asm volatile("dsb sy");
-    asm volatile("isb");
+	/* Non-secure physical timer PPI INTID 30 */
+    ((volatile uint8_t *)GICD_IPRIORITYR)[GIC_CNTNS_IRQ_ID] =
+        0x40;
+
+	/*
+     * INTID 30 must be PPI，each CPU has own enable bit。
+     * CPU0 must activate it by itself。 
+     */
+    *GICD_ISENABLER(0) =
+        1U << GIC_CNTNS_IRQ_ID;
+	
+	*GICD_CTLR = 1U;
+    *GICC_PMR  = 0xffU;
+    *GICC_CTLR = 1U;
+
+    asm volatile(
+        "dsb sy\n"
+        "isb\n"
+        ::: "memory"
+    );
 }

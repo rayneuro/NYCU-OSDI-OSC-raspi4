@@ -11,5 +11,7 @@ unsigned long utils_atoi(const char *s, int char_size);
 size_t utils_strlen(const char *s);
 void reverse    ( char *s );
 void itohex_str( uint64_t d, int size, char * s );
+void utils_strcpy(char *dst, char * src);
+char * utils_strdup(const char *s);
 
 #endif

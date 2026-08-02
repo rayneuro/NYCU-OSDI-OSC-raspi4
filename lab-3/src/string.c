@@ -143,3 +143,20 @@ size_t utils_strlen(const char *s) {
 	while (s[i]) i++;
 	return i+1;
 }
+
+void utils_strcpy(char *dst, char * src){
+    char *save = dst;
+	while((*dst++ = *src++));
+	return save;
+
+}
+
+char *utils_strdup(const char *src) {
+	size_t len = utils_strlen(src);
+	char *dst = simple_malloc(len);
+    if (dst == NULL) { // Check if the memory has been successfully allocated
+        return NULL;
+    }
+    utils_strcpy(dst, src); // Copy the string
+    return dst;
+}

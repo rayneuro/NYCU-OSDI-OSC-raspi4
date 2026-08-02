@@ -100,6 +100,8 @@ void uart_enable_interrupt(){
     // RX FIFO 與 receive timeout interrupt 
     mmio_write(UART0_IMSC, UART_RXIM | UART_RTIM);
 
+    asm volatile("dsb sy" ::: "memory");
+
     /* UART0 INTID 153: ISENABLER[4], bit 25 */
     *GICD_ISENABLER(UART0_GIC_IRQ_ID / 32) =
         1U << (UART0_GIC_IRQ_ID % 32);

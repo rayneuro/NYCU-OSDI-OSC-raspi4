@@ -133,6 +133,55 @@ void irq_except_handler_c(void)
         asm volatile("dsb sy" ::: "memory");
     }
 }
+
+void uart_transmit_handler() {
+	mmio_write(AUX_MU_IER, mmio_read(AUX_MU_IER) | (0x2));	
+	
+	if (uart_write_buffer[uart_write_index-1] == '\r'){
+		uart_write_buffer[uart_write_index++] = '\n';
+		uart_write_buffer[uart_write_index] = '\0';
+	}
+
+	// Send data from the write buffer
+    while (uart_write_head != uart_write_index) {
+        mmio_write(AUX_MU_IO, uart_write_buffer[uart_write_head++]);
+        if (uart_write_index >= UART_BUFFER_SIZE) {
+            uart_write_index = 0;
+        }
+		
+		
+		if (uart_write_head == uart_write_index) {
+			mmio_write(AUX_MU_IER, mmio_read(AUX_MU_IER) & ~0x2);
+			if(uart_read_buffer[uart_read_index-1] == '\r'){
+				uart_read_buffer[uart_read_index-1] = '\0';
+				parse_command(uart_read_buffer);
+				uart_read_index = 0;
+				uart_write_index = 0;
+				uart_write_head = 0;
+			}	
+		}	
+	} 
+	mmio_write(AUX_MU_IER, mmio_read(AUX_MU_IER) | 0x1);
+}
+
+void uart_receive_handler() {
+	
+	// Read data(8 bytes) and store it in the read buffer
+    char data = mmio_read(AUX_MU_IO) & 0xff;
+    uart_read_buffer[uart_read_index++] = data;
+    if (uart_read_index >= UART_BUFFER_SIZE) {
+        uart_read_index = 0;
+    }
+
+    // Enqueue the received data into the write buffer
+    uart_write_buffer[uart_write_index++] = data;
+    if (uart_write_index >= UART_BUFFER_SIZE) {
+        uart_write_index = 0;
+    }
+
+	create_task(uart_transmit_handler,2);
+}
+
 void gic_init(void)
 {
     *GICD_CTLR = 1;

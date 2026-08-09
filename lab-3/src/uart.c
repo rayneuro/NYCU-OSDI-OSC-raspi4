@@ -5,9 +5,12 @@
 
 #define AUX_MU_BAUD(baud) ((AUX_UART_CLOCK/(baud*8))-1) // Set up for mini UART1
 
-unsigned char uart_output_queue[UART_MAX_QUEUE];
-unsigned int uart_output_queue_write = 0;
-unsigned int uart_output_queue_read = 0;
+char uart_write_buffer[UART_BUFFER_SIZE];
+char uart_read_buffer[UART_BUFFER_SIZE];
+int uart_read_index =0;
+int uart_read_head = 0;
+int uart_write_index = 0;
+int uart_write_head = 0;
 
 void uart_init() {
     /* initialize UART */

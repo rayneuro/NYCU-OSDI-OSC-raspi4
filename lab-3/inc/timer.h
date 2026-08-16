@@ -12,9 +12,9 @@ typedef struct timer {
     timer_callback callback;  // the function to call when the timer expires
     void *data;  // data to be passed to the callback
     uint64_t expiry;  // the time at which the timer will expire
-} timer_t;
+} timer_t_p;
 
-extern timer_t *timer_head;  // head of the timer list
+extern timer_t_p *timer_head;  // head of the timer list
 
 
 void setTimeout(char *message,uint64_t seconds);

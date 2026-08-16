@@ -1,6 +1,5 @@
 #include "uart.h"
 #include "irq.h"
-#include "shell.h"
 #include "timer.h"
 #include "tasklist.h"
 
@@ -60,7 +59,7 @@ void timer_irq_handler(void)
     );
 
     while (timer_head && timer_head->expiry <= current_time) {
-        timer_t *expired = timer_head;
+        timer_t_p *expired = timer_head;
 
         timer_head = expired->next;
         if (timer_head)
@@ -86,38 +85,14 @@ void timer_irq_handler(void)
     }
 }
 
-static void uart0_irq_handler(void)
-{
-    uint32_t status = mmio_read(UART0_MIS);
-
-    /*
-     * RX interrupt or receive-timeout interrupt。
-     * Keep reading, until  RX FIFO empty。
-     */
-    if (status & (UART_RXIM | UART_RTIM)) {
-        while (!(mmio_read(UART0_FR) & UART_RXFE)) {
-            unsigned char ch =
-                (unsigned char)(mmio_read(UART0_DR) & 0xff);
-
-            uart_write_char(ch);
-        }
-
-        /*
-         * RX interrupt 通常會因 FIFO 被讀空而解除；
-         * receive-timeout interrupt 必須透過 ICR 清除。
-         */
-        mmio_write(UART0_ICR, UART_RXIM | UART_RTIM);
-    }
-}
-
 void irq_except_handler_c(void)
 {
     uint32_t iar = *GICC_IAR;
     uint32_t intid = iar & 0x3ffU;
 
     switch (intid) {
-    case 153:
-        uart0_irq_handler();
+    case UART0_GIC_IRQ_ID:
+        uart_irq_handler();
         break;
 
     case GIC_CNTNS_IRQ_ID:
@@ -132,54 +107,6 @@ void irq_except_handler_c(void)
         *GICC_EOIR = iar;
         asm volatile("dsb sy" ::: "memory");
     }
-}
-
-void uart_transmit_handler() {
-	mmio_write(AUX_MU_IER_REG, mmio_read(AUX_MU_IER_REG) | (0x2));	
-	
-	if (uart_write_buffer[uart_write_index-1] == '\r'){
-		uart_write_buffer[uart_write_index++] = '\n';
-		uart_write_buffer[uart_write_index] = '\0';
-	}
-
-	// Send data from the write buffer
-    while (uart_write_head != uart_write_index) {
-        mmio_write(AUX_MU_IO_REG, uart_write_buffer[uart_write_head++]);
-        if (uart_write_index >= UART_BUFFER_SIZE) {
-            uart_write_index = 0;
-        }
-		
-		
-		if (uart_write_head == uart_write_index) {
-			mmio_write(AUX_MU_IER_REG, mmio_read(AUX_MU_IER_REG) & ~0x2);
-			if(uart_read_buffer[uart_read_index-1] == '\r'){
-				uart_read_buffer[uart_read_index-1] = '\0';
-				parse_command(uart_read_buffer);
-				uart_read_index = 0;
-				uart_write_index = 0;
-				uart_write_head = 0;
-			}	
-		}	
-	} 
-	mmio_write(AUX_MU_IER_REG, mmio_read(AUX_MU_IER_REG) | 0x1);
-}
-
-void uart_receive_handler() {
-	
-	// Read data(8 bytes) and store it in the read buffer
-    char data = mmio_read(AUX_MU_IO_REG) & 0xff;
-    uart_read_buffer[uart_read_index++] = data;
-    if (uart_read_index >= UART_BUFFER_SIZE) {
-        uart_read_index = 0;
-    }
-
-    // Enqueue the received data into the write buffer
-    uart_write_buffer[uart_write_index++] = data;
-    if (uart_write_index >= UART_BUFFER_SIZE) {
-        uart_write_index = 0;
-    }
-
-	create_task(uart_transmit_handler,2);
 }
 
 void gic_init(void)

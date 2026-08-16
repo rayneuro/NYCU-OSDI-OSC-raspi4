@@ -7,6 +7,7 @@
 #include "cpio.h"
 #include "mailbox.h"
 #include "dtb.h"
+#include "allocator.h"
 
 extern void *_dtb_ptr;
 // PM Registers

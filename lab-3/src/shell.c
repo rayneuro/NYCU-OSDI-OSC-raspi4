@@ -2,6 +2,8 @@
 #include "shell.h"
 #include "uart.h"
 #include "string.h"
+#include "tasklist.h"
+#include "cpio.h"
 
 extern void *_dtb_ptr;
 
@@ -32,14 +34,13 @@ void shell_init(){
     // read char
     while(1)
     {
-        
-        if (!uart_isReadByteNotReady()){
-            input_char = uart_readByte();
+        /* Run UART/timer bottom halves created by the IRQ top halves. */
+        execute_tasks();
+
+        while (uart_async_read(&input_char)) {
             input_parse = parse_character( input_char );
             command_line_parser( input_parse, input_char, buffer ,&buffer_counter);
-            
         }
-    
     } 
     
 

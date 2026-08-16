@@ -2,7 +2,6 @@
 #define IRQ_H
 #include <stdint.h>
 // 1. Set ARM Local register base Pi4 to 0xFF800000
-#define PERIPHERAL_BASE = 0xFE000000
 #define ARM_LOCAL_BASE 0xFF800000UL
 #define CORE0_TIMER_IRQ_CTRL    ((volatile unsigned int*)(MMIO + 0x40))
 #define CORE0_INTERRUPT_SOURCE  ((volatile unsigned int*)(ARM_LOCAL_BASE + 0x60))
@@ -25,6 +24,7 @@
 
 uint64_t irq_save(void);
 void irq_restore(uint64_t flags);
+void gic_init(void);
 
 
 #endif

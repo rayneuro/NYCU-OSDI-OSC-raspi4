@@ -2,6 +2,7 @@
 #include "shell.h"
 #include "framebuffer.h"
 #include "dtb.h"
+#include "irq.h"
 
 extern void *_dtb_ptr;
 int main()
@@ -15,6 +16,16 @@ int main()
     // say hello
     fdt_traverse(get_cpio_addr,_dtb_ptr);
     uart_puts("Hlelo World!\n");
+
+    gic_init();
+    uart_enable_interrupt();
+
+    asm volatile(
+        "dsb sy\n"
+        "msr DAIFClr, #2\n"
+        "isb\n"
+        ::: "memory"
+    );
 
     // start shell
     shell_init();

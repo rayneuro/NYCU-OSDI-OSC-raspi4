@@ -28,8 +28,13 @@ _start:
     b       3b
     # the next instruction runs in EL1
 
+    // Install the EL1 exception vector table before enabling interrupts.
+4:  ldr     x0, =exception_vector_table
+    msr     vbar_el1, x0
+    isb
+
     // jump to C code, should not return
-4:  bl      main
+    bl      main
     // for failsafe, halt this core too
     b       1b
 

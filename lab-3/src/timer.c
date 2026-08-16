@@ -3,10 +3,12 @@
 #include "uart.h"
 #include "irq.h"
 #include "utils.h"
+#include "string.h"
+#include "allocator.h"
 
-timer_t *timer_head = NULL;
+timer_t_p *timer_head = NULL;
 
-void add_timer(timer_t *new_timer) {
+void add_timer(timer_t_p *new_timer) {
     uint64_t flags = irq_save();
 
     /* 修改 timer linked list */
@@ -17,7 +19,7 @@ void add_timer(timer_t *new_timer) {
 
 void create_timer(timer_callback callback, void* data, uint64_t after) {
 	//Allocate memory for the timer
-	timer_t* timer = simple_malloc(sizeof(timer_t));
+	timer_t_p* timer = simple_malloc(sizeof(timer_t_p));
 	if(!timer) {
 		return;
 	}

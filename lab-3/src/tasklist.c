@@ -5,8 +5,8 @@
 task_t *task_head = NULL;
 
 void enqueue_task(task_t *new_task) {
-    // Disable interrupts to protect the critical section
-    asm volatile("msr DAIFSet, 0xf");
+    uint64_t flags = irq_save();
+
     // Special case: the list is empty or the new task has higher priority
     if (!task_head || new_task->priority < task_head->priority) {
 		new_task->next = task_head;
@@ -31,8 +31,7 @@ void enqueue_task(task_t *new_task) {
         current->next = new_task;
     }
 
-    // Enable interrupts
-    asm volatile("msr DAIFClr, 0xf");
+    irq_restore(flags);
 }
 
 void create_task(task_callback callback, uint64_t priority) {
@@ -48,18 +47,23 @@ void create_task(task_callback callback, uint64_t priority) {
 	enqueue_task(task);
 }
 
-void execute_tasks() {
-	
+void execute_tasks(void) {
+    while (1) {
+        uint64_t flags = irq_save();
+        task_t *task = task_head;
 
-    while (task_head) {        
-        task_head->callback();
-        task_head = task_head->next;
-        if (task_head) {
-            task_head->prev = NULL;
+        if (!task) {
+            irq_restore(flags);
+            return;
         }
-		asm volatile("msr DAIFSet, 0xf"); // Disable interrupts
-        //simple_free(task);
-    }
 
-    asm volatile("msr DAIFClr, 0xf"); // Enable interrupts
+        task_head = task->next;
+        if (task_head)
+            task_head->prev = NULL;
+
+        irq_restore(flags);
+
+        task->callback();
+        /* simple_free(task) is still needed when the allocator supports it. */
+    }
 }

@@ -111,30 +111,23 @@ void irq_except_handler_c(void)
 
 void gic_init(void)
 {
-    *GICD_CTLR = 1;
+    *GICD_CTLR = 0;
+    *GICC_CTLR = 0;
+
+    ((volatile uint8_t *)GICD_IPRIORITYR)
+        [UART0_GIC_IRQ_ID] = 0x80;
+
+    ((volatile uint8_t *)GICD_ITARGETSR)
+        [UART0_GIC_IRQ_ID] = 0x01;
+
+    ((volatile uint8_t *)GICD_IPRIORITYR)
+        [GIC_CNTNS_IRQ_ID] = 0x40;
+
+    *GICD_ISENABLER(0) = 1U << GIC_CNTNS_IRQ_ID;
+
     *GICC_PMR  = 0xff;
     *GICC_CTLR = 1;
-
-    /* UART0 priority = 0x80 */
-    ((volatile uint8_t *)GICD_IPRIORITYR)[153] = 0x80;
-
-    /* 將 UART0 interrupt routing 到 CPU0 */
-    ((volatile uint8_t *)GICD_ITARGETSR)[153] = 0x01;
-
-	/* Non-secure physical timer PPI INTID 30 */
-    ((volatile uint8_t *)GICD_IPRIORITYR)[GIC_CNTNS_IRQ_ID] =
-        0x40;
-
-	/*
-     * INTID 30 must be PPI，each CPU has own enable bit。
-     * CPU0 must activate it by itself。 
-     */
-    *GICD_ISENABLER(0) =
-        1U << GIC_CNTNS_IRQ_ID;
-	
-	*GICD_CTLR = 1U;
-    *GICC_PMR  = 0xffU;
-    *GICC_CTLR = 1U;
+    *GICD_CTLR = 1;
 
     asm volatile(
         "dsb sy\n"

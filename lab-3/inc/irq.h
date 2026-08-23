@@ -22,6 +22,8 @@
 #define GICC_CTLR       ((volatile uint32_t *)(GIC_CPU_BASE + 0x000))
 #define GICC_PMR        ((volatile uint32_t *)(GIC_CPU_BASE + 0x004))
 
+#define GIC_CNTNS_IRQ_ID 30U
+
 uint64_t irq_save(void);
 void irq_restore(uint64_t flags);
 void gic_init(void);

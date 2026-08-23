@@ -1,3 +1,4 @@
+#include "allocator.h"
 #include "string.h"
 #include "math.h"
 #include <stdint.h>
@@ -144,11 +145,8 @@ size_t utils_strlen(const char *s) {
 	return i+1;
 }
 
-void utils_strcpy(char *dst, char * src){
-    char *save = dst;
+void utils_strcpy(char *dst, const char *src){
 	while((*dst++ = *src++));
-	return save;
-
 }
 
 char *utils_strdup(const char *src) {

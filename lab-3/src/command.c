@@ -8,6 +8,7 @@
 #include "mailbox.h"
 #include "dtb.h"
 #include "allocator.h"
+#include "timer.h"
 
 extern void *_dtb_ptr;
 // PM Registers
@@ -44,6 +45,14 @@ void command_hello()
     uart_puts("Hello world!\n");
 }
 
+void command_timeout(const char *message, uint64_t seconds)
+{
+    if (setTimeout(message, seconds))
+        uart_puts("Timer scheduled.\n");
+    else
+        uart_puts("Unable to schedule timer.\n");
+}
+
 
 void command_help()
 {
@@ -52,6 +61,7 @@ void command_help()
     uart_puts("\thelp        : Show this help message\n");
     uart_puts("\treboot  : Reboot the rpi4 \n");
     uart_puts("\ttimestamp   : Show current timestamp\n");
+    uart_puts("\tSetTimeout  : Schedule a timer callback\n");
     uart_puts("\tboardvision : Print board vision\n");
     uart_puts("\tVC address  : Print video core address\n");
     uart_puts("\tloadimg     : Load the kernel image to target address\n");

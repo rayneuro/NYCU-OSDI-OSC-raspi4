@@ -15,6 +15,7 @@ enum SHELL_CHARACTER
 };
 
 void shell_init();
+void shell_cpio_cat(void);
 enum SHELL_CHARACTER parse_character(char ch);
 void command_line_parser(enum SHELL_CHARACTER, char ch, char [] ,int *);
 

@@ -3,11 +3,6 @@
 #include "timer.h"
 #include "tasklist.h"
 
-// 針對 GIC-400 的通用定義 (Raspberry Pi 4B 專用)
-#define GIC_CNTPS_IRQ_ID       29    // Secure Physical Timer 在 GIC 中的中斷號
-#define GIC_CNTNS_IRQ_ID       30    // Non-secure Physical Timer 
-#define AUXINIT_BIT_POSTION 1<<29
-
 void except_handler_c() {
 	uart_puts("In Exception handle\n");
 
@@ -42,49 +37,6 @@ void except_handler_c() {
 	}
 }
 
-void timer_irq_handler(void)
-{
-    uint64_t current_time;
-
-    /* Pause halt the timer，避免持續觸發 */
-    asm volatile(
-        "msr cntp_ctl_el0, %0"
-        :
-        : "r"(0UL)
-    );
-
-    asm volatile(
-        "mrs %0, cntpct_el0"
-        : "=r"(current_time)
-    );
-
-    while (timer_head && timer_head->expiry <= current_time) {
-        timer_t_p *expired = timer_head;
-
-        timer_head = expired->next;
-        if (timer_head)
-            timer_head->prev = NULL;
-
-        expired->callback(expired->data);
-
-        /* This can express expired */
-    }
-
-    if (timer_head) {
-        asm volatile(
-            "msr cntp_cval_el0, %0"
-            :
-            : "r"(timer_head->expiry)
-        );
-
-        asm volatile(
-            "msr cntp_ctl_el0, %0"
-            :
-            : "r"(1UL)
-        );
-    }
-}
-
 void irq_except_handler_c(void)
 {
     uint32_t iar = *GICC_IAR;
@@ -102,6 +54,27 @@ void irq_except_handler_c(void)
     default:
         break;
     }
+
+    /*
+     * Keep this interrupt active in the GIC while running its bottom halves.
+     * After IRQ is unmasked, the GIC running-priority mechanism only permits
+     * a higher-priority interrupt to nest this handler.
+    */
+    asm volatile(
+        "dsb sy\n"
+        "msr DAIFClr, #2\n"
+        "isb\n"
+        ::: "memory"
+    );
+
+    execute_tasks();
+
+    /* Protect the final EOIR and exception-frame restore from another IRQ. */
+    asm volatile(
+        "msr DAIFSet, #2\n"
+        "isb\n"
+        ::: "memory"
+    );
 
     if (intid < 1020U) {
         *GICC_EOIR = iar;

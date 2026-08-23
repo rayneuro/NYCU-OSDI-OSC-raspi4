@@ -16,6 +16,8 @@ typedef struct timer {
 
 extern timer_t_p *timer_head;  // head of the timer list
 
-
-void setTimeout(char *message,uint64_t seconds);
+void add_timer(timer_t_p *new_timer);
+int create_timer(timer_callback callback, void *data, uint64_t after);
+void timer_irq_handler(void);
+int setTimeout(const char *message, uint64_t seconds);
 #endif

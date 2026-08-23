@@ -6,6 +6,7 @@
 #include "cpio.h"
 
 extern void *_dtb_ptr;
+static int timeout_args_pending = 0;
 
 void read_command(char* buffer) {
 	int index = 0;
@@ -19,6 +20,40 @@ void read_command(char* buffer) {
 		}
 		index++;
 	}
+}
+
+static int parse_timeout_args(const char *input, uint64_t *seconds,
+                              const char **message)
+{
+    uint64_t value = 0;
+    int digits = 0;
+
+    while (*input == ' ')
+        ++input;
+
+    while (*input >= '0' && *input <= '9') {
+        uint64_t digit = (uint64_t)(*input - '0');
+
+        if (value > (~(uint64_t)0 - digit) / 10)
+            return 0;
+
+        value = value * 10 + digit;
+        ++input;
+        ++digits;
+    }
+
+    if (!digits || *input != ' ')
+        return 0;
+
+    while (*input == ' ')
+        ++input;
+
+    if (!*input)
+        return 0;
+
+    *seconds = value;
+    *message = input;
+    return 1;
 }
 
 void shell_init(){
@@ -61,6 +96,8 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
 
     }
     else if(cp == NEW_LINE){
+        int show_prompt = 1;
+
         // Typing Enter on concole (Putty or tty) == '\r' == ch
         uart_puts("\n");
         if((*counter) == MAX_BUFFER_LEN){
@@ -68,9 +105,24 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
         }else{
             buf[(*counter)] = '\0';
              
-            if(!strcmp( buf,"help")) command_help();
+            if (timeout_args_pending) {
+                uint64_t seconds;
+                const char *message;
+
+                timeout_args_pending = 0;
+                if (parse_timeout_args(buf, &seconds, &message))
+                    command_timeout(message, seconds);
+                else
+                    uart_puts("Usage: <seconds> <message>\n");
+            }
+            else if(!strcmp( buf,"help")) command_help();
             else if(!strcmp(buf, "hello")) command_hello();
             else if(!strcmp(buf, "timestamp")) command_timestamp();
+            else if(!strcmp(buf, "SetTimeout")) {
+                timeout_args_pending = 1;
+                show_prompt = 0;
+                uart_puts("Seconds and message: ");
+            }
             else if(!strcmp(buf, "reboot")) command_reboot();
             else if(!strcmp(buf, "boardvision")) command_board_revision();
             else if(!strcmp(buf, "VC address")) command_vc_base_addr();
@@ -83,7 +135,8 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
         }
         (*counter) =0;
         strset(buf, 0, MAX_BUFFER_LEN);
-        uart_puts("# ");
+        if (show_prompt)
+            uart_puts("# ");
 
     }else if(cp == REGULAR_INPUT ){
         uart_write_char(ch);

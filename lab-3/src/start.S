@@ -33,6 +33,11 @@ _start:
     msr     vbar_el1, x0
     isb
 
+    // Enable EL1 FP/SIMD
+    mrs x0, cpacr_el1
+    orr x0, x0, #(3 << 20)   // FPEN = 0b11
+    msr cpacr_el1, x0
+    isb
     // jump to C code, should not return
     bl      main
     // for failsafe, halt this core too
@@ -48,7 +53,8 @@ from_el2_to_el1:
 
 // save general registers to stack
 .macro save_all
-    sub sp, sp, 32 * 8
+    // 31 GPRs plus ELR_EL1 and SPSR_EL1; keep SP 16-byte aligned.
+    sub sp, sp, 17 * 16
     stp x0, x1, [sp ,16 * 0]
     stp x2, x3, [sp ,16 * 1]
     stp x4, x5, [sp ,16 * 2]
@@ -65,10 +71,20 @@ from_el2_to_el1:
     stp x26, x27, [sp ,16 * 13]
     stp x28, x29, [sp ,16 * 14]
     str x30, [sp, 16 * 15]
+
+    // A nested exception overwrites these system registers, so preserve them.
+    mrs x0, elr_el1
+    mrs x1, spsr_el1
+    stp x0, x1, [sp, 16 * 16]
 .endm
 
 // load general registers from stack
 .macro load_all
+    // Restore the exception return state before restoring the original x0/x1.
+    ldp x0, x1, [sp, 16 * 16]
+    msr elr_el1, x0
+    msr spsr_el1, x1
+
     ldp x0, x1, [sp ,16 * 0]
     ldp x2, x3, [sp ,16 * 1]
     ldp x4, x5, [sp ,16 * 2]
@@ -85,7 +101,7 @@ from_el2_to_el1:
     ldp x26, x27, [sp ,16 * 13]
     ldp x28, x29, [sp ,16 * 14]
     ldr x30, [sp, 16 * 15]
-    add sp, sp, 32 * 8
+    add sp, sp, 17 * 16
 .endm
 
 exception_handler:

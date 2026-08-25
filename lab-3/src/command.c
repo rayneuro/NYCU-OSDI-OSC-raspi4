@@ -226,5 +226,7 @@ void command_malloc(){
 	uart_puts(a);
     uart_write_char('\n');
 	uart_puts(b);
-	uart_write_char('\n');	 
+	uart_write_char('\n');
+	simple_free(a);
+	simple_free(b);
 }

@@ -88,13 +88,13 @@ void gic_init(void)
     *GICC_CTLR = 0;
 
     ((volatile uint8_t *)GICD_IPRIORITYR)
-        [UART0_GIC_IRQ_ID] = 0x80;
+        [UART0_GIC_IRQ_ID] = 0x40;
 
     ((volatile uint8_t *)GICD_ITARGETSR)
         [UART0_GIC_IRQ_ID] = 0x01;
 
     ((volatile uint8_t *)GICD_IPRIORITYR)
-        [GIC_CNTNS_IRQ_ID] = 0x40;
+        [GIC_CNTNS_IRQ_ID] = 0x80;
 
     *GICD_ISENABLER(0) = 1U << GIC_CNTNS_IRQ_ID;
 

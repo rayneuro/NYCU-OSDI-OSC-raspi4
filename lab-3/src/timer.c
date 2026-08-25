@@ -121,7 +121,7 @@ static void timer_expiry_task(void)
 
 		irq_restore(flags);
 		expired->callback(expired->data);
-		/* Release expired when the allocator gains a free operation. */
+		simple_free(expired);
 	}
 }
 
@@ -153,6 +153,7 @@ void print_message(void *data) {
 	uart_puts(" occurs at ");
 	uart_hex(seconds);
 	uart_puts("\n");
+	simple_free(message);
 }
 
 int setTimeout(const char *message, uint64_t seconds)
@@ -167,5 +168,10 @@ int setTimeout(const char *message, uint64_t seconds)
 	if (!message_copy)
 		return 0;
 
-	return create_timer(print_message, message_copy, seconds);
+	if (!create_timer(print_message, message_copy, seconds)) {
+		simple_free(message_copy);
+		return 0;
+	}
+
+	return 1;
 }

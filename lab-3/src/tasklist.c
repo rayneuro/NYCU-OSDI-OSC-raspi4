@@ -3,6 +3,8 @@
 #include "uart.h"
 
 task_t *task_head = NULL;
+/* A smaller number means a higher priority.  UINT64_MAX is the idle level. */
+static uint64_t current_task_priority = UINT64_MAX;
 
 void enqueue_task(task_t *new_task) {
     uint64_t flags = irq_save();
@@ -48,11 +50,23 @@ void create_task(task_callback callback, uint64_t priority) {
 }
 
 void execute_tasks(void) {
+    uint64_t flags = irq_save();
+    uint64_t preempted_priority = current_task_priority;
+
+    irq_restore(flags);
+
     while (1) {
-        uint64_t flags = irq_save();
+        uint64_t previous_priority;
+        flags = irq_save();
         task_t *task = task_head;
 
-        if (!task) {
+        /*
+         * The queue is sorted by priority.  A task may preempt only when it
+         * has a strictly higher priority than the task interrupted by this
+         * invocation of execute_tasks().  Equal/lower-priority work remains
+         * queued until that task completes.
+         */
+        if (!task || task->priority >= preempted_priority) {
             irq_restore(flags);
             return;
         }
@@ -61,9 +75,19 @@ void execute_tasks(void) {
         if (task_head)
             task_head->prev = NULL;
 
+        previous_priority = current_task_priority;
+        current_task_priority = task->priority;
         irq_restore(flags);
 
         task->callback();
-        /* simple_free(task) is still needed when the allocator supports it. */
+
+        /*
+         * Restore the preempted task's priority as a stack would.  Keep this
+         * update and the task-node reclamation atomic with respect to IRQs.
+         */
+        flags = irq_save();
+        current_task_priority = previous_priority;
+        simple_free(task);
+        irq_restore(flags);
     }
 }

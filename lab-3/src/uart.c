@@ -43,6 +43,8 @@ void uart_init() {
     /* initialize UART */
     mmio_write(UART0_CR , 0);         // turn off UART0
 
+    mbox_set_clock_to_PL011();
+
     /* map UART0 to GPIO pins */
     gpio_useAsAlt0(14);
     gpio_useAsAlt0(15);

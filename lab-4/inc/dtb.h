@@ -21,6 +21,7 @@ struct __attribute__((packed)) fdt_header {
     uint32_t size_dt_struct;
 };
 
+uint32_t fdt_u32_le2be(const void *addr);
 int fdt_traverse(fdt_callback cb,void *dtb_ptr);
 void get_cpio_addr(int token,const char* name,const void* data,uint32_t size);
 void print_dtb(int token, const char* name, const void* data, uint32_t size);

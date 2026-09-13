@@ -5,7 +5,8 @@
 #define UNUSED(x) (void)(x)
 
 
-char * cpio_addr;
+char *cpio_addr;
+char *cpio_end;
 int space = 0;
 //1. Define the callback function type(fdt_callback)
 //2. Create a structure for holding the FDT header information(fdt_header)
@@ -121,17 +122,33 @@ int fdt_traverse(fdt_callback cb,void * _dtb){
 
 }
 
+static uintptr_t read_fdt_address(const void *data, uint32_t size)
+{
+	const volatile uint8_t *bytes = (const volatile uint8_t *)data;
+	uintptr_t value = 0;
+
+	if (size != 4 && size != 8)
+		return 0;
+
+	/* DTB properties are only 4-byte aligned, so avoid a 64-bit load. */
+	for (uint32_t i = 0; i < size; i++)
+		value = (value << 8) | bytes[i];
+
+	return value;
+}
+
 //5. Implement the initramfs_callback function:
 void get_cpio_addr(int token,const char* name,const void* data,uint32_t size){
-	if(token==FDT_PROP && strcmp((char *)name,"linux,initrd-start") == 0){
-		uintptr_t addr = fdt_u32_le2be(data);
-		if (size == 8) {
-			addr = fdt_u32_le2be((const char *)data + 4);
-		}
-		cpio_addr = (char*)addr;
-		uart_puts("cpio address is at: ");
-		uart_hex((unsigned int)addr);
-		uart_write_char('\n');
+	if (token != FDT_PROP || name == NULL || data == NULL)
+		return;
+
+	if (strcmp((char *)name, "linux,initrd-start") == 0) {
+			cpio_addr = (char *)read_fdt_address(data, size);
+			uart_puts("cpio address is at: ");
+			uart_hex((uintptr_t)cpio_addr);
+			uart_write_char('\n');
+	} else if (strcmp((char *)name, "linux,initrd-end") == 0) {
+			cpio_end = (char *)read_fdt_address(data, size);
 	}
 }
 

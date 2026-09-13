@@ -1,5 +1,6 @@
 
 extern char* cpio_addr;
+extern char* cpio_end;
 
 void cpio_ls();
 void cpio_cat(char* filename);

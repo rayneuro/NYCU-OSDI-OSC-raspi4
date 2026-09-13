@@ -3,7 +3,7 @@
 #include "framebuffer.h"
 #include "dtb.h"
 #include "irq.h"
-#include "printf.h"
+#include "print.h"
 
 extern void *_dtb_ptr;
 static void uart_printf_putc(void *arg, char ch)
@@ -26,7 +26,7 @@ int main()
     framebuffer_show_pic();
     // say hello
     fdt_traverse(get_cpio_addr,_dtb_ptr);
-    uart_puts("Hlelo World!\n");
+    uart_puts("Hello World!\n");
     gic_init();
     uart_enable_interrupt();
 

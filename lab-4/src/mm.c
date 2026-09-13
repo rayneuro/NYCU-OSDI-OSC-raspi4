@@ -1,6 +1,8 @@
 #include "mm.h"
 #include "uart.h"
 #include "print.h"
+#include "cpio.h"
+#include "dtb.h"
 
 #include <stddef.h>
 page_t bookkeep[PAGE_FRMAME_NUM];
@@ -240,12 +242,12 @@ int register_obj_allocator(int objsize)
 {
     if (objsize < MIN_ALLOCATAED_OBJ_SIZE) {
         objsize = MIN_ALLOCATAED_OBJ_SIZE;
-        printf("[register_obj_allocator] Min object size is 8, automatically set it to 8 ");
+        printf("[register_obj_allocator] Min object size is 8, automatically set it to 8 \n");
     }
 
     if (objsize > MAX_ALLOCATAED_OBJ_SIZE) {
         objsize = MAX_ALLOCATAED_OBJ_SIZE;
-        printf("[register_obj_allocator] Max object size is 2048, automatically set it to 2048 ");
+        printf("[register_obj_allocator] Max object size is 2048, automatically set it to 2048 \n");
     }
 
     for (int token = 0;token < MAX_OBJ_ALLOCTOR_NUM;token++) {
@@ -254,15 +256,15 @@ int register_obj_allocator(int objsize)
 
         __init_obj_alloc(&obj_alloc_pool[token], objsize);
 
-        #ifdef __DEBUG
+        //#ifdef __DEBUG
         printf("[register_obj_allocator] Successfully Register object allocator! {objsize(%d), token(%d)}\n"
                 ,objsize, token);
-        #endif //__DEBUG 
+        //#endif //__DEBUG 
 
         return token;
     }
 
-    printf("[register_obj_allocator] Allocator pool has been fully registered.");
+    printf("[register_obj_allocator] Allocator pool has been fully registered.\n");
     return -1;
 }
 
@@ -519,10 +521,28 @@ void kfree(void *addr)
 void mm_init()
 {
     extern char _end[];
+    extern void *_dtb_ptr;
+    uintptr_t dtb_start = (uintptr_t)_dtb_ptr;
 
     page_init();
     memory_reserve(0x0, 0x1000);
     memory_reserve(0x80000, (uintptr_t)_end);
+
+    if (cpio_addr != NULL &&
+        (uintptr_t)cpio_end > (uintptr_t)cpio_addr)
+        memory_reserve((uintptr_t)cpio_addr, (uintptr_t)cpio_end);
+
+    if (dtb_start != 0) {
+        struct fdt_header *header = (struct fdt_header *)dtb_start;
+
+        if (fdt_u32_le2be(&header->magic) == 0xd00dfeed) {
+            uintptr_t dtb_end = dtb_start +
+                                fdt_u32_le2be(&header->totalsize);
+            if (dtb_end > dtb_start)
+                memory_reserve(dtb_start, dtb_end);
+        }
+    }
+
     free_area_init();
     
     
@@ -546,32 +566,32 @@ void mm_init()
     /**
      *  Test object allcator
      */
-    // int token = register_obj_allocator(2000);
-    // void *addr1 = obj_allocate(token); // page frame 0
-    // void *addr2  = obj_allocate(token);
+    int token = register_obj_allocator(2000);
+    void *addr1 = obj_allocate(token); // page frame 0
+    void *addr2  = obj_allocate(token);
     
-    // void *addr3 = obj_allocate(token); // 1
-    // void *addr4 = obj_allocate(token);
+    void *addr3 = obj_allocate(token); // 1
+    void *addr4 = obj_allocate(token);
 
-    // void *addr5 = obj_allocate(token); // 2
-    // void *addr6 = obj_allocate(token);
+    void *addr5 = obj_allocate(token); // 2
+    void *addr6 = obj_allocate(token);
 
-    // void *addr7 = obj_allocate(token); // 3
-    // void *addr11 = obj_allocate(token);
+    void *addr7 = obj_allocate(token); // 3
+    void *addr11 = obj_allocate(token);
 
-    // void *addr12 = obj_allocate(token); // 4
-    // void *addr13 = obj_allocate(token);
-    // obj_free(addr1);
-    // obj_free(addr2);
+    void *addr12 = obj_allocate(token); // 4
+    void *addr13 = obj_allocate(token);
+    obj_free(addr1);
+    obj_free(addr2);
     // void *addr14 = obj_allocate(token); // 0
-    // void *addr15 = obj_allocate(token);__init_kmalloc();
-    // obj_free(addr11);
-    // obj_free(addr5);
-    // obj_free(addr15);
-    // obj_free(addr3);
+    void *addr15 = obj_allocate(token);__init_kmalloc();
+    obj_free(addr11);
+    obj_free(addr5);
+    obj_free(addr15);
+    obj_free(addr3);
 
-    // void *addr17 = obj_allocate(token); // 5
-    // void *addr18 = obj_allocate(token); // 3
+    void *addr17 = obj_allocate(token); // 5
+    void *addr18 = obj_allocate(token); // 3
     
     
     /* Test Dynamic Memory Allocator */
@@ -587,36 +607,38 @@ void mm_init()
     kfree(k_addr4);
 
     // Test case 2
-    // void *address_1 = kmalloc(16);
-    // void *address_2 = kmalloc(64);
-    // kfree(address_1);
-    // void *address_3 = kmalloc(1024);
-    // kfree(address_2);
-    // kfree(address_3);
-    // void *address_4 = kmalloc(16);
-    // void *address_9 = kmalloc(16384);
-    // void *address_10 = kmalloc(16384);
-    // kfree(address_4);
-    // void *address_5 = kmalloc(32);
-    // void *address_6 = kmalloc(32);
-    // kfree(address_5);
-    // kfree(address_6);
-    // void *address_7 = kmalloc(512);
-    // void *address_8 = kmalloc(512);
-    // kfree(address_8);
-    // kfree(address_7);
-    // kfree(address_9);
-    // kfree(address_10);
-    // void *address_11 = kmalloc(8192);
-    // void *address_12 = kmalloc(65536);
-    // void *address_13 = kmalloc(128);
-    // kfree(address_11);
-    // void *address_14 = kmalloc(65536);
-    // kfree(address_13);
-    // kfree(address_12);
-    // kfree(address_14);
-    // void *address_15 = kmalloc(256);
-    // kfree(address_15);
+    
+    void *address_2 = kmalloc(64);
+    void *address_1 = kmalloc(16);
+    kfree(address_1);
+    void *address_3 = kmalloc(1024);
+    kfree(address_2);
+    kfree(address_3);
+    void *address_4 = kmalloc(16);
+    void *address_9 = kmalloc(16384);
+    void *address_10 = kmalloc(16384);
+    kfree(address_4);
+    void *address_5 = kmalloc(32);
+    void *address_6 = kmalloc(32);
+    kfree(address_5);
+    kfree(address_6);
+    void *address_7 = kmalloc(512);
+    void *address_8 = kmalloc(512);
+    kfree(address_8);
+    kfree(address_7);
+    kfree(address_9);
+    kfree(address_10);
+    void *address_11 = kmalloc(8192);
+    void *address_12 = kmalloc(65536);
+    void *address_13 = kmalloc(128);
+    kfree(address_11);
+    void *address_14 = kmalloc(65536);
+    kfree(address_13);
+    kfree(address_12);
+    kfree(address_14);
+    void *address_15 = kmalloc(256);
+    kfree(address_15);
+    
 }
 
 void memory_reserve(uintptr_t start, uintptr_t end){

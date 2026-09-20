@@ -5,14 +5,12 @@
 #define PAGE_SHIFT                 12
 #define PAGE_SIZE                  (1 << PAGE_SHIFT) // 4KB per page frame
 
-extern unsigned long page_frame_count;
-#define PAGE_FRMAME_NUM            page_frame_count
+#define PAGE_FRMAME_NUM            4096
 
 #define MAX_ORDER                  9 
 #define MAX_ORDER_SIZE             (1 << MAX_ORDER)
 
-extern uintptr_t memory_base;
-#define LOW_MEMORY                 memory_base
+#define LOW_MEMORY                 0x90000
 
 #define FIND_BUDDY_PFN(pfn, order) ((pfn) ^ (1<<(order)))
 #define FIND_LBUDDY_PFN(pfn, order)((pfn) & (~(1<<(order))))
@@ -61,8 +59,6 @@ typedef struct page {
     struct object_allocator *obj_alloc; 
     struct list_head *free; 
 } page_t;
-
-extern page_t *bookkeep;
 
 /**
  *  Initalization for Buddy system

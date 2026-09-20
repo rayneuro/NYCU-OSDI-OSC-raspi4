@@ -3,13 +3,9 @@
 #include "print.h"
 #include "cpio.h"
 #include "dtb.h"
-#include "startup.h"
-#include "mailbox.h"
 
 #include <stddef.h>
-page_t *bookkeep;
-unsigned long page_frame_count;
-uintptr_t memory_base;
+page_t bookkeep[PAGE_FRMAME_NUM];
 free_area_t free_area[MAX_ORDER + 1];
 
 obj_allocator_t obj_alloc_pool[MAX_OBJ_ALLOCTOR_NUM];
@@ -54,13 +50,10 @@ static void add_free_pfn_range(unsigned long start_pfn,
 void page_init() 
 {
     free_area_ready = 0;
-    for (unsigned long i = 0;i < PAGE_FRMAME_NUM;i++) {
+    for (int i = 0;i < PAGE_FRMAME_NUM;i++) {
         bookkeep[i].pfn = i;
         bookkeep[i].used = Free;
         bookkeep[i].phy_addr = LOW_MEMORY + i*PAGE_SIZE;
-        bookkeep[i].obj_used = 0;
-        bookkeep[i].obj_alloc = NULL;
-        bookkeep[i].free = NULL;
         bookkeep[i].order = -1; 
         INIT_LIST_HEAD(&bookkeep[i].list);
     }
@@ -163,9 +156,6 @@ struct page *buddy_block_alloc(int order)
 
 void buddy_block_free(struct page* block) 
 {
-    if (!block || block->used != Taken || block->order < 0)
-        return;
-
     #ifdef __DEBUG
      printf("\n[buddy_block_free] **Start free block{ pfn(%d), order(%d) }**\n", 
            block->pfn, block->order);
@@ -173,23 +163,27 @@ void buddy_block_free(struct page* block)
     // dump_buddy();
     #endif //__DEBUG
 
-    // A runtime-sized pool may end before the computed buddy PFN.
-    while (block->order < MAX_ORDER) {
-        unsigned long buddy_pfn = FIND_BUDDY_PFN(block->pfn, block->order);
-        if (buddy_pfn >= page_frame_count)
-            break;
-        page_t *buddy = &bookkeep[buddy_pfn];
-        if (buddy->used != Free || buddy->order != block->order)
-            break;
+    // Coalesce free buddy
+    int buddy_pfn = FIND_BUDDY_PFN(block->pfn, block->order);
+    page_t *buddy_block = &bookkeep[buddy_pfn];
+    while (block->order < MAX_ORDER && block->order == buddy_block->order && 
+           buddy_block->used == Free) {
+        printf("Buddy{ pfn(%d), order(%d) }\n", buddy_block->pfn, buddy_block->order);
 
-        int order = block->order;
-        unsigned long left = FIND_LBUDDY_PFN(block->pfn, order);
-        pop_block_from_free_area(buddy, &free_area[order]);
-        block->order = -1;
-        buddy->order = -1;
-        block = &bookkeep[left];
-        block->order = order + 1;
-    }
+        // Pop buddy block from frealist
+        pop_block_from_free_area(buddy_block, &free_area[buddy_block->order]);
+
+        // Find left block as primary block
+        int lbuddy_pfn = FIND_LBUDDY_PFN(block->pfn, block->order);
+        block = &bookkeep[lbuddy_pfn];
+        
+        // Add 1 to order in primary block. It's means that it merge two block. 
+        block->order += 1;
+        
+        // prepare next merge iteration
+        buddy_pfn = FIND_BUDDY_PFN(block->pfn, block->order);
+        buddy_block = &bookkeep[buddy_pfn];
+    } 
     // Push merged block to freelist
     push_block_to_free_area(block, &free_area[block->order], block->order);
 
@@ -524,85 +518,127 @@ void kfree(void *addr)
     #endif //__DEBUG
 }
 
-static void startup_panic(void)
-{
-    printf("[mm] Startup memory initialization failed\n");
-    for (;;)
-        ;
-}
-
-static void reserve_boot_range(uintptr_t start, uintptr_t end)
-{
-    if (start < end && startup_reserve(start, end - start) < 0)
-        startup_panic();
-}
-
 void mm_init()
 {
-    extern char _start[], _end[];
+    extern char _end[];
     extern void *_dtb_ptr;
-    static int initialized;
-    uintptr_t base, end;
-    size_t size;
+    uintptr_t dtb_start = (uintptr_t)_dtb_ptr;
 
-    /* The shell's ma command must not reset live allocations. */
-    if (initialized)
-        return;
-    if (mbox_get_arm_memory(&base, &size) < 0 || size > UINTPTR_MAX - base ||
-        base > UINTPTR_MAX - (PAGE_SIZE - 1))
-        startup_panic();
-    end = (base + size) & ~(uintptr_t)(PAGE_SIZE - 1);
-    memory_base = (base + PAGE_SIZE - 1) & ~(uintptr_t)(PAGE_SIZE - 1);
-    if (end <= memory_base)
-        startup_panic();
-    page_frame_count = (end - memory_base) / PAGE_SIZE;
+    page_init();
+    memory_reserve(0x0, 0x1000);
+    memory_reserve(0x80000, (uintptr_t)_end);
 
-    startup_init(memory_base, end);
-    reserve_boot_range(0, PAGE_SIZE); // firmware spin table / low memory
-    reserve_boot_range((uintptr_t)_start, (uintptr_t)_end); // includes stack/BSS
-    reserve_boot_range((uintptr_t)cpio_addr, (uintptr_t)cpio_end);
+    if (cpio_addr != NULL &&
+        (uintptr_t)cpio_end > (uintptr_t)cpio_addr)
+        memory_reserve((uintptr_t)cpio_addr, (uintptr_t)cpio_end);
 
-    if (_dtb_ptr) {
-        uintptr_t dtb = (uintptr_t)_dtb_ptr;
-        struct fdt_header *header = _dtb_ptr;
-        uint32_t total = fdt_u32_le2be(&header->totalsize);
-        uint32_t offset = fdt_u32_le2be(&header->off_mem_rsvmap);
-        if (fdt_u32_le2be(&header->magic) != 0xd00dfeed ||
-            total < sizeof(*header) || total > UINTPTR_MAX - dtb)
-            startup_panic();
-        reserve_boot_range(dtb, dtb + total);
+    if (dtb_start != 0) {
+        struct fdt_header *header = (struct fdt_header *)dtb_start;
 
-        /* FDT reserve-map entries are pairs of big-endian 64-bit values. */
-        for (;;) {
-            if (offset > total || total - offset < 16)
-                startup_panic();
-            const unsigned char *entry = (const unsigned char *)dtb + offset;
-            uint64_t address = ((uint64_t)fdt_u32_le2be(entry) << 32) |
-                               fdt_u32_le2be(entry + 4);
-            uint64_t length = ((uint64_t)fdt_u32_le2be(entry + 8) << 32) |
-                              fdt_u32_le2be(entry + 12);
-            if (!address && !length)
-                break;
-            if (length && startup_reserve(address, length) < 0)
-                startup_panic();
-            offset += 16;
+        if (fdt_u32_le2be(&header->magic) == 0xd00dfeed) {
+            uintptr_t dtb_end = dtb_start +
+                                fdt_u32_le2be(&header->totalsize);
+            if (dtb_end > dtb_start)
+                memory_reserve(dtb_start, dtb_end);
         }
     }
 
-    if (page_frame_count > SIZE_MAX / sizeof(*bookkeep))
-        startup_panic();
-    bookkeep = startup_alloc(page_frame_count * sizeof(*bookkeep), PAGE_SIZE);
-    if (!bookkeep)
-        startup_panic();
-    page_init();
-    for (unsigned int i = 0; i < startup_block_count; i++)
-        memory_reserve(startup_blocks[i].start,
-                       startup_blocks[i].start + startup_blocks[i].size);
     free_area_init();
-    startup_finish();
+    
+    
+    /**
+     *  Test Buddy memory Allocator
+     */
+    int allocate_test1[] = {5, 0, 6, 3, 0};
+    int test1_size = sizeof(allocate_test1) / sizeof(int);
+    page_t *(one_pages[test1_size]);
+    for (int i = 0;i < test1_size;i++) {
+         page_t *one_page = buddy_block_alloc(allocate_test1[i]); // Allocate one page frame
+         //printf("\n Allocated Block{ pfn(%d), order(%d), phy_addr_16(0x%x) }: %u\n", one_page->pfn, one_page->order, one_page->phy_addr);
+         one_pages[i] = one_page;
+    }
+    buddy_block_free(one_pages[2]);
+    buddy_block_free(one_pages[1]);
+    buddy_block_free(one_pages[4]);
+    buddy_block_free(one_pages[3]);
+    buddy_block_free(one_pages[0]);
+
+    /**
+     *  Test object allcator
+     */
+    int token = register_obj_allocator(2000);
+    void *addr1 = obj_allocate(token); // page frame 0
+    void *addr2  = obj_allocate(token);
+    
+    void *addr3 = obj_allocate(token); // 1
+    void *addr4 = obj_allocate(token);
+
+    void *addr5 = obj_allocate(token); // 2
+    void *addr6 = obj_allocate(token);
+
+    void *addr7 = obj_allocate(token); // 3
+    void *addr11 = obj_allocate(token);
+
+    void *addr12 = obj_allocate(token); // 4
+    void *addr13 = obj_allocate(token);
+    obj_free(addr1);
+    obj_free(addr2);
+    // void *addr14 = obj_allocate(token); // 0
+    void *addr15 = obj_allocate(token);__init_kmalloc();
+    obj_free(addr11);
+    obj_free(addr5);
+    obj_free(addr15);
+    obj_free(addr3);
+
+    void *addr17 = obj_allocate(token); // 5
+    void *addr18 = obj_allocate(token); // 3
+    
+    
+    /* Test Dynamic Memory Allocator */
     __init_kmalloc();
-    initialized = 1;
-    printf("[mm] Startup allocation complete; buddy allocator ready\n");
+    // Test case 1
+    void *k_addr1 = kmalloc(16);
+    void *k_addr2 = kmalloc(48);
+    kfree(k_addr1);
+    void *k_addr3 = kmalloc(2048);
+    void *k_addr4 = kmalloc(2048);
+    void *k_addr5 = kmalloc(8787);
+    kfree(k_addr3);
+    kfree(k_addr4);
+
+    // Test case 2
+    
+    void *address_2 = kmalloc(64);
+    void *address_1 = kmalloc(16);
+    kfree(address_1);
+    void *address_3 = kmalloc(1024);
+    kfree(address_2);
+    kfree(address_3);
+    void *address_4 = kmalloc(16);
+    void *address_9 = kmalloc(16384);
+    void *address_10 = kmalloc(16384);
+    kfree(address_4);
+    void *address_5 = kmalloc(32);
+    void *address_6 = kmalloc(32);
+    kfree(address_5);
+    kfree(address_6);
+    void *address_7 = kmalloc(512);
+    void *address_8 = kmalloc(512);
+    kfree(address_8);
+    kfree(address_7);
+    kfree(address_9);
+    kfree(address_10);
+    void *address_11 = kmalloc(8192);
+    void *address_12 = kmalloc(65536);
+    void *address_13 = kmalloc(128);
+    kfree(address_11);
+    void *address_14 = kmalloc(65536);
+    kfree(address_13);
+    kfree(address_12);
+    kfree(address_14);
+    void *address_15 = kmalloc(256);
+    kfree(address_15);
+    
 }
 
 void memory_reserve(uintptr_t start, uintptr_t end){

@@ -2,20 +2,6 @@
 #include "gpio.h"
 #include "framebuffer.h"
 
-int mbox_get_arm_memory(uintptr_t *base, size_t *size)
-{
-    volatile uint32_t __attribute__((aligned(16))) message[8] = {
-        8 * 4, TAGS_REQ_CODE, TAGS_HARDWARE_ARM_MEM,
-        8, TAGS_REQ_CODE, 0, 0, TAGS_REQ_END
-    };
-
-    if (!mailbox_call(MBOX_CH_PROP, message) ||
-        message[4] != (TAGS_REQ_SUCCEED | 8) || !message[6])
-        return -1;
-    *base = message[5];
-    *size = message[6];
-    return 0;
-}
 
 
 int mailbox_call ( unsigned char channel, volatile uint32_t * mail_box )

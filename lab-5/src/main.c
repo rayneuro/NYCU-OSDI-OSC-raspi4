@@ -4,7 +4,6 @@
 #include "dtb.h"
 #include "irq.h"
 #include "print.h"
-#include "mm.h"
 
 extern void *_dtb_ptr;
 static void uart_printf_putc(void *arg, char ch)
@@ -27,7 +26,6 @@ int main()
     framebuffer_show_pic();
     // say hello
     fdt_traverse(get_cpio_addr,_dtb_ptr);
-    mm_init();
     uart_puts("Hello World!\n");
     gic_init();
     uart_enable_interrupt();

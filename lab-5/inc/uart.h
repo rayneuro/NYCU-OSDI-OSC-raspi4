@@ -1,0 +1,81 @@
+#ifndef UART_H
+#define UART_H
+#include <stdint.h>
+#include "irq.h"
+#define UART_BUFFER_SIZE 2048
+
+// mini UART
+// bcm2711-peripherals.pdf
+enum {
+    PERIPHERAL_BASE_UART = 0xFE000000,
+    AUX_BASE        = PERIPHERAL_BASE_UART + 0x215000,
+    AUX_IRQ         = AUX_BASE,
+    AUX_ENABLES     = AUX_BASE + 4,
+    AUX_MU_IO_REG   = AUX_BASE + 64,
+    AUX_MU_IER_REG  = AUX_BASE + 68,
+    AUX_MU_IIR_REG  = AUX_BASE + 72,
+    AUX_MU_LCR_REG  = AUX_BASE + 76,
+    AUX_MU_MCR_REG  = AUX_BASE + 80,
+    AUX_MU_LSR_REG  = AUX_BASE + 84,
+    AUX_MU_MSR_REG  = AUX_BASE + 88,
+    AUX_MU_SCRATCH  = AUX_BASE + 92,
+    AUX_MU_CNTL_REG = AUX_BASE + 96,
+    AUX_MU_STAT_REG = AUX_BASE + 100,
+    AUX_MU_BAUD_REG = AUX_BASE + 104,
+    AUX_UART_CLOCK  = 500000000,
+    UART_MAX_QUEUE  = 16 * 1024
+};
+
+// PL011 UART 0
+// bcm2711-peripherals.pdf
+enum {
+    UART0_DR =  PERIPHERAL_BASE_UART + 0x201000,
+    UART0_RSRECR =  PERIPHERAL_BASE_UART + 0x201004,
+    UART0_FR =  PERIPHERAL_BASE_UART + 0x201018, // Flag register
+    UART0_ILPR = PERIPHERAL_BASE_UART + 0x201020, // Not in use
+    UART0_IBRD = PERIPHERAL_BASE_UART +  0x201024, //Integer Baud rate divisor
+    UART0_FBRD = PERIPHERAL_BASE_UART + 0x201028, // Fractional Baud rate divisor
+    UART0_LCRH = PERIPHERAL_BASE_UART +  0x20102C,  // Line Control
+    UART0_CR = PERIPHERAL_BASE_UART + 0x201030, // Control register
+    UART0_IFLS = PERIPHERAL_BASE_UART + 0x201034, // Interrupt FIFO Level Select Register
+    UART0_IMSC = PERIPHERAL_BASE_UART + 0x201038, // Interrupt Mask Set/Clear Register
+    UART0_RIS  = PERIPHERAL_BASE_UART + 0x20103C, // Raw Interrupt Status Register
+    UART0_MIS  = PERIPHERAL_BASE_UART + 0x201040, //Masked Interrupt Status Register
+    UART0_ICR  = PERIPHERAL_BASE_UART + 0x201044, // Interrupt Clear Register
+};
+
+extern char uart_read_buffer[UART_BUFFER_SIZE];
+extern char uart_write_buffer[UART_BUFFER_SIZE];
+extern int uart_read_index;
+extern int uart_read_head;
+extern int uart_write_index;
+extern int uart_write_head;
+#define UART_RXIM (1U << 4)
+#define UART_TXIM (1U << 5)
+#define UART_RTIM (1U << 6)
+
+#define UART_RXFE (1U << 4)
+#define UART_TXFF (1U << 5)
+#define UART0_GIC_ENABLE_BIT (1U << 25)
+#define UART0_GIC_IRQ_ID 153U
+
+
+void uart_init();
+unsigned char uart_readByte();
+unsigned int uart_isReadByteNotReady();
+unsigned int uart_isWriteByteNotReady();
+void uart_writeByteBlockingActual(unsigned char ch);
+void uart_write_char(unsigned char ch);
+void uart_puts(char *buffer);
+void uart_CR();
+int uart_getint();
+void uart_hex(unsigned int d);
+void uart_enable_interrupt();
+void uart_irq_handler(void);
+void uart_receive_handler(void);
+void uart_transmit_handler(void);
+int uart_async_read(char *buffer);
+void uart_async_write(const char *buffer, int length);
+void uart_async_send(const char *str);
+
+# endif

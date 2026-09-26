@@ -3,6 +3,9 @@
 #include "gpio.h"
 #include "framebuffer.h"
 #include <stdint.h>
+#include <stddef.h>
+
+int mailbox_call(unsigned char channel, volatile uint32_t *mail_box);
 
 
 
@@ -112,6 +115,7 @@ enum{
 };
 
 uint32_t mbox_get_board_revision();
+int mbox_get_arm_memory(uintptr_t *base, size_t *size);
 uint64_t mbox_get_VC_base_addr();
 void mbox_set_clock_to_PL011();
 int mbox_framebuffer_init( uint32_t width, uint32_t height, FRAME_BUFFER * fb );

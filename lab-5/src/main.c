@@ -4,6 +4,8 @@
 #include "dtb.h"
 #include "irq.h"
 #include "print.h"
+#include "mm.h"
+#include "thread.h"
 
 extern void *_dtb_ptr;
 static void uart_printf_putc(void *arg, char ch)
@@ -11,9 +13,9 @@ static void uart_printf_putc(void *arg, char ch)
     (void)arg;
 
     if (ch == '\n')
-        uart_write_char('\r');
+        uart_async_write_char('\r');
 
-    uart_write_char((unsigned char)ch);
+    uart_async_write_char((unsigned char)ch);
 }
 
 int main()
@@ -26,7 +28,8 @@ int main()
     framebuffer_show_pic();
     // say hello
     fdt_traverse(get_cpio_addr,_dtb_ptr);
-    uart_puts("Hello World!\n");
+    mm_init();
+    uart_async_send("Hello World!\n");
     gic_init();
     uart_enable_interrupt();
 
@@ -37,8 +40,9 @@ int main()
         ::: "memory"
     );
 
-    // start shell
-    shell_init();
-    
-    return 0;
+    // Keep the bootstrap stack for idle and run the shell as a thread.
+    thread_init();
+    if (!thread_create(shell_init))
+        printf("[thread] Unable to create shell thread\n");
+    idle();
 }

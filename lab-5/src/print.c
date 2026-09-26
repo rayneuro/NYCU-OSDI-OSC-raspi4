@@ -1,3 +1,4 @@
+#include "irq.h"
 /*
 File: printf.c
 Copyright (C) 2004  Kustaa Nyholm
@@ -204,13 +205,37 @@ void init_printf(void* putp,void (*putf) (void*,char))
     stdout_putp=putp;
     }
 
+/* Formatting is reentrant and preemptible; only bounded publication of a
+ * console chunk is atomic, keeping normal short log lines together. */
+struct print_chunk { char data[128]; unsigned used; };
+
+static void flush_chunk(struct print_chunk *chunk)
+{
+    uint64_t flags = irq_save();
+    for (unsigned i = 0; i < chunk->used; ++i)
+        stdout_putf(stdout_putp, chunk->data[i]);
+    irq_restore(flags);
+    chunk->used = 0;
+}
+
+static void chunk_putc(void *arg, char ch)
+{
+    struct print_chunk *chunk = arg;
+    chunk->data[chunk->used++] = ch;
+    if (chunk->used == sizeof(chunk->data)) flush_chunk(chunk);
+}
+
 void tfp_printf(char *fmt, ...)
-    {
+{
+    struct print_chunk chunk;
+    chunk.used = 0;
     va_list va;
-    va_start(va,fmt);
-    tfp_format(stdout_putp,stdout_putf,fmt,va);
+    va_start(va, fmt);
+    tfp_format(&chunk, chunk_putc, fmt, va);
     va_end(va);
-    }
+    flush_chunk(&chunk);
+}
+
 
 static void putcp(void* p,char c)
     {

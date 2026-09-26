@@ -14,7 +14,7 @@ typedef struct task {
 } task_t;
 
 void execute_tasks(void);
-void create_task(task_callback callback, uint64_t priority);
+int create_task(task_callback callback, uint64_t priority);
 void enqueue_task(task_t *new_task);
 extern task_t *task_head;
 

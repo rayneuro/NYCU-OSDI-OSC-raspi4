@@ -1,11 +1,39 @@
 #include "mailbox.h"
 #include "gpio.h"
 #include "framebuffer.h"
+#include "irq.h"
+#include "thread.h"
+static int mailbox_busy;
 
+int mbox_get_arm_memory(uintptr_t *base, size_t *size)
+{
+    volatile uint32_t __attribute__((aligned(16))) message[8] = {
+        8 * 4, TAGS_REQ_CODE, TAGS_HARDWARE_ARM_MEM,
+        8, TAGS_REQ_CODE, 0, 0, TAGS_REQ_END
+    };
+
+    if (!mailbox_call(MBOX_CH_PROP, message) ||
+        message[4] != (TAGS_REQ_SUCCEED | 8) || !message[6])
+        return -1;
+    *base = message[5];
+    *size = message[6];
+    return 0;
+}
 
 
 int mailbox_call ( unsigned char channel, volatile uint32_t * mail_box )
-{   
+{
+    for (;;) {
+        uint64_t flags = irq_save();
+        if (!mailbox_busy) {
+            mailbox_busy = 1;
+            irq_restore(flags);
+            break;
+        }
+        irq_restore(flags);
+        schedule();
+    }
+    asm volatile("dsb sy" ::: "memory");
     const uint32_t interface = ((unsigned int)((unsigned long)mail_box)&~0xF) | (channel & 0xF);
 
     /* wait until  the full flag is not set */
@@ -31,7 +59,12 @@ int mailbox_call ( unsigned char channel, volatile uint32_t * mail_box )
         if( mmio_read(MAILBOX_READ) == interface )
         {
             /* is it a valid successful response? */
-            return mail_box[1] == TAGS_REQ_SUCCEED;
+            asm volatile("dsb sy" ::: "memory");
+            int success = mail_box[1] == TAGS_REQ_SUCCEED;
+            uint64_t flags = irq_save();
+            mailbox_busy = 0;
+            irq_restore(flags);
+            return success;
         }
     }
 

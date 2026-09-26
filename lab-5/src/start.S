@@ -43,6 +43,21 @@ _start:
     // for failsafe, halt this core too
     b       1b
 
+.global enter_el0
+.type enter_el0, %function
+enter_el0:
+    // Do not let an IRQ overwrite the exception-return registers.
+    msr daifset, #0xf
+    msr sp_el0, x1
+    msr elr_el1, x0
+    mov x2, #0
+    msr spsr_el1, x2
+    // A user entry point must not return into its EL1 caller.
+    mov x30, xzr
+    isb
+    eret
+.size enter_el0, . - enter_el0
+
 from_el2_to_el1:
     mov x0, (1 << 31) // EL1 uses aarch64
     msr hcr_el2, x0
@@ -53,8 +68,8 @@ from_el2_to_el1:
 
 // save general registers to stack
 .macro save_all
-    // 31 GPRs plus ELR_EL1 and SPSR_EL1; keep SP 16-byte aligned.
-    sub sp, sp, 17 * 16
+    // GPRs, exception return state, all FP/SIMD registers and FPCR/FPSR.
+    sub sp, sp, 50 * 16
     stp x0, x1, [sp ,16 * 0]
     stp x2, x3, [sp ,16 * 1]
     stp x4, x5, [sp ,16 * 2]
@@ -71,20 +86,66 @@ from_el2_to_el1:
     stp x26, x27, [sp ,16 * 13]
     stp x28, x29, [sp ,16 * 14]
     str x30, [sp, 16 * 15]
+    mrs x0, sp_el0
+    str x0, [sp, #248]
 
     // A nested exception overwrites these system registers, so preserve them.
     mrs x0, elr_el1
     mrs x1, spsr_el1
     stp x0, x1, [sp, 16 * 16]
+    // Interrupts can arrive with caller-saved FP/SIMD values live.
+    stp q0, q1, [sp, #272]
+    stp q2, q3, [sp, #304]
+    stp q4, q5, [sp, #336]
+    stp q6, q7, [sp, #368]
+    stp q8, q9, [sp, #400]
+    stp q10, q11, [sp, #432]
+    stp q12, q13, [sp, #464]
+    stp q14, q15, [sp, #496]
+    stp q16, q17, [sp, #528]
+    stp q18, q19, [sp, #560]
+    stp q20, q21, [sp, #592]
+    stp q22, q23, [sp, #624]
+    stp q24, q25, [sp, #656]
+    stp q26, q27, [sp, #688]
+    stp q28, q29, [sp, #720]
+    stp q30, q31, [sp, #752]
+    mrs x0, fpcr
+    mrs x1, fpsr
+    str x0, [sp, #784]
+    str x1, [sp, #792]
 .endm
 
 // load general registers from stack
 .macro load_all
+    // Restore the interrupted FP/SIMD state before restoring GPRs.
+    ldp q0, q1, [sp, #272]
+    ldp q2, q3, [sp, #304]
+    ldp q4, q5, [sp, #336]
+    ldp q6, q7, [sp, #368]
+    ldp q8, q9, [sp, #400]
+    ldp q10, q11, [sp, #432]
+    ldp q12, q13, [sp, #464]
+    ldp q14, q15, [sp, #496]
+    ldp q16, q17, [sp, #528]
+    ldp q18, q19, [sp, #560]
+    ldp q20, q21, [sp, #592]
+    ldp q22, q23, [sp, #624]
+    ldp q24, q25, [sp, #656]
+    ldp q26, q27, [sp, #688]
+    ldp q28, q29, [sp, #720]
+    ldp q30, q31, [sp, #752]
+    ldr x0, [sp, #784]
+    ldr x1, [sp, #792]
+    msr fpcr, x0
+    msr fpsr, x1
     // Restore the exception return state before restoring the original x0/x1.
     ldp x0, x1, [sp, 16 * 16]
     msr elr_el1, x0
     msr spsr_el1, x1
 
+    ldr x0, [sp, #248]
+    msr sp_el0, x0
     ldp x0, x1, [sp ,16 * 0]
     ldp x2, x3, [sp ,16 * 1]
     ldp x4, x5, [sp ,16 * 2]
@@ -101,17 +162,27 @@ from_el2_to_el1:
     ldp x26, x27, [sp ,16 * 13]
     ldp x28, x29, [sp ,16 * 14]
     ldr x30, [sp, 16 * 15]
-    add sp, sp, 17 * 16
+    add sp, sp, 50 * 16
 .endm
+
+.global process_return
+.type process_return, %function
+process_return:
+    msr daifset, #2
+    mov sp, x0
+    load_all
+    eret
 
 exception_handler:
     save_all
+    mov x0, sp
     bl except_handler_c
     load_all
     eret
 
 irq_exception_handler:
 	save_all
+    mov x0, sp
 	bl irq_except_handler_c
 	load_all
 	eret

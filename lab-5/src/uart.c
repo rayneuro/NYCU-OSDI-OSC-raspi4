@@ -67,8 +67,15 @@ unsigned char uart_readByte() {
 }
 
 void uart_writeByteBlockingActual(unsigned char ch) {
-    while (uart_isWriteByteNotReady()); 
-    mmio_write(UART0_DR, (unsigned int)ch);
+    for (;;) {
+        uint64_t flags = irq_save();
+        if (!uart_isWriteByteNotReady()) {
+            mmio_write(UART0_DR, (unsigned int)ch);
+            irq_restore(flags);
+            return;
+        }
+        irq_restore(flags);
+    }
 }
 
 void uart_write_char(unsigned char ch){
@@ -256,6 +263,21 @@ void uart_async_write(const char *buffer, int length)
 
     if (queued)
         uart_schedule_transmit();
+}
+
+void uart_async_write_char(const char ch)
+{
+    uint64_t flags;
+
+    flags = irq_save();
+    
+    uart_queue_push(uart_write_buffer, &uart_write_index,
+                             uart_write_head, ch);
+
+    irq_restore(flags);
+
+
+    uart_schedule_transmit();
 }
 
 void uart_async_send(const char *str)

@@ -2,43 +2,40 @@
 #include "irq.h"
 #include "timer.h"
 #include "tasklist.h"
+#include "thread.h"
 
-void except_handler_c() {
-	uart_puts("In Exception handle\n");
+#include "process.h"
 
-	//read spsr_el1
-	unsigned long long spsr_el1 = 0;
-	asm volatile("mrs %0, spsr_el1":"=r"(spsr_el1));
-	uart_puts("spsr_el1: ");
-	uart_hex(spsr_el1);
-	uart_puts("\n");
-
-	//read elr_el1
-	unsigned long long elr_el1 = 0;
-	asm volatile("mrs %0, elr_el1":"=r"(elr_el1));
-	uart_puts("elr_el1: ");
-	uart_hex(elr_el1);
-	uart_puts("\n");
-	
-	//esr_el1
-	unsigned long long esr_el1 = 0;
-	asm volatile("mrs %0, esr_el1":"=r"(esr_el1));
-	uart_hex(esr_el1);
-	uart_puts("\n");
-
-	//ec
-	unsigned ec = (esr_el1 >> 26) & 0x3F; //0x3F = 0b111111(6)
-	uart_puts("ec: ");
-	uart_hex(ec);
-	uart_puts("\n");
-
-	while(1){
-
-	}
+void except_handler_c(struct trap_frame *frame)
+{
+    uint64_t esr;
+    asm volatile("mrs %0, esr_el1" : "=r"(esr));
+    if ((frame->pstate & 31) == 0) {
+        /* Return state is already saved; nested timer IRQs are now safe. */
+        asm volatile("msr daifclr, #2" ::: "memory");
+        if ((esr >> 26) == 0x15 && (esr & 0xffff) == 0)
+            syscall_dispatch(frame);
+        else {
+            uart_puts("[process] user fault ESR=");
+            uart_hex(esr);
+            uart_puts(" PC=");
+            uart_hex(frame->pc);
+            uart_puts("\n");
+            thread_exit();
+        }
+        if (get_current()->killed) thread_exit();
+        asm volatile("msr daifset, #2" ::: "memory");
+        return;
+    }
+    uart_puts("[kernel] synchronous exception ESR=");
+    uart_hex(esr);
+    uart_puts("\n");
+    for (;;) asm volatile("wfe");
 }
 
-void irq_except_handler_c(void)
+void irq_except_handler_c(uint64_t *frame)
 {
+    thread_irq_enter();
     uint32_t iar = *GICC_IAR;
     uint32_t intid = iar & 0x3ffU;
 
@@ -80,6 +77,7 @@ void irq_except_handler_c(void)
         *GICC_EOIR = iar;
         asm volatile("dsb sy" ::: "memory");
     }
+    thread_irq_exit(frame[33]); /* SPSR_EL1 saved by save_all. */
 }
 
 void gic_init(void)

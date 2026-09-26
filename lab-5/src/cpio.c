@@ -3,6 +3,20 @@
 #include "string.h"
 #include "utils.h"
 
+#include "process.h"
+#include "thread.h"
+
+void cpio_exec(char *filename)
+{
+    int pid = process_spawn(filename);
+    if (pid < 0) {
+        uart_async_send("Unable to load raw user program\n");
+        return;
+    }
+    /* Foreground process owns UART input until exit; shell remains scheduled. */
+    while (thread_alive((unsigned int)pid)) schedule();
+}
+
 char *findFile(char *name)
 {
     char *addr = (char *)cpio_addr;
@@ -38,8 +52,8 @@ void cpio_ls(){
 		utils_align(&headerPathname_size,4);
 		utils_align(&file_size,4);
 		
-		uart_puts(addr+sizeof(struct cpio_header));
-		uart_puts("\n");
+		uart_async_send(addr+sizeof(struct cpio_header));
+		uart_async_send("\n");
 		
 		addr += (headerPathname_size + file_size);
 	}
@@ -60,14 +74,16 @@ void cpio_cat(char *filename)
         utils_align(&file_size,4);           
 
         char *file_content = target + headerPathname_size;
+        uart_async_write(file_content,file_size);
+        /*
 		for (unsigned int i = 0; i < file_size; i++)
         {
-            uart_write_char(file_content[i]);
-        }
-        uart_puts("\n");
+            uart_async_write(file_content[i]);
+        }*/
+        uart_async_send("\n");
     }
     else
     {
-        uart_puts("Not found the file\n");
+        uart_async_send("Not found the file\n");
     }
 }

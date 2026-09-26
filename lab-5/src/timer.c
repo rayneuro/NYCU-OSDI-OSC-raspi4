@@ -5,16 +5,34 @@
 #include "utils.h"
 #include "string.h"
 #include "tasklist.h"
+#include "thread.h"
 
 timer_t_p *timer_head = NULL;
 static int timer_task_pending = 0;
+static uint64_t slice_ticks;
+static uint64_t slice_deadline;
+
+static uint64_t counter_now(void)
+{
+    uint64_t now;
+    asm volatile("mrs %0, cntpct_el0" : "=r"(now));
+    return now;
+}
 
 static void timer_program_next_locked(void)
 {
-	if (timer_head) {
+    uint64_t deadline = slice_deadline;
+    int enabled = slice_ticks != 0;
+    /* An outstanding bottom half owns expired callbacks, not the slice. */
+    if (timer_head && !timer_task_pending &&
+        (!enabled || timer_head->expiry < deadline)) {
+        deadline = timer_head->expiry;
+        enabled = 1;
+    }
+	if (enabled) {
 		asm volatile("msr cntp_cval_el0, %0"
 				     :
-				     : "r"(timer_head->expiry)
+				     : "r"(deadline)
 				     : "memory");
 		asm volatile("msr cntp_ctl_el0, %0"
 				     :
@@ -28,6 +46,27 @@ static void timer_program_next_locked(void)
 	}
 
 	asm volatile("isb" ::: "memory");
+}
+
+void timer_reset_slice(void)
+{
+    uint64_t flags = irq_save();
+    if (slice_ticks)
+        slice_deadline = counter_now() + slice_ticks;
+    timer_program_next_locked();
+    irq_restore(flags);
+}
+
+void timer_set_quantum_ms(unsigned int ms)
+{
+    uint64_t flags = irq_save();
+    uint64_t frequency;
+    asm volatile("mrs %0, cntfrq_el0" : "=r"(frequency));
+    slice_ticks = (frequency * ms + 999) / 1000;
+    if (!slice_ticks)
+        slice_ticks = 1;
+    timer_reset_slice();
+    irq_restore(flags);
 }
 
 void add_timer(timer_t_p *new_timer)
@@ -134,10 +173,18 @@ void timer_irq_handler(void)
 			     : "memory");
 	asm volatile("isb" ::: "memory");
 
-	if (!timer_task_pending) {
-		timer_task_pending = 1;
-		create_task(timer_expiry_task, 3);
-	}
+    uint64_t now = counter_now();
+    if (slice_ticks && now >= slice_deadline) {
+        thread_request_reschedule();
+        /* Rearm even if a critical section defers the actual switch. */
+        slice_deadline = now + slice_ticks;
+    }
+    if (timer_head && timer_head->expiry <= now && !timer_task_pending) {
+        timer_task_pending = 1;
+        if (!create_task(timer_expiry_task, 3))
+            timer_task_pending = 0;
+    }
+    timer_program_next_locked();
 }
 
 

@@ -43,11 +43,26 @@ _start:
     // for failsafe, halt this core too
     b       1b
 
+.global enter_el0
+.type enter_el0, %function
+enter_el0:
+    // Do not let an IRQ overwrite the exception-return registers.
+    msr daifset, #0xf
+    msr sp_el0, x1
+    msr elr_el1, x0
+    mov x2, #0x3c0
+    msr spsr_el1, x2
+    // A user entry point must not return into its EL1 caller.
+    mov x30, xzr
+    isb
+    eret
+.size enter_el0, . - enter_el0
+
 from_el2_to_el1:
     mov x0, (1 << 31) // EL1 uses aarch64
     msr hcr_el2, x0
     mov x0, 0x3c5 // EL1h (SPSel = 1) with interrupt disabled  (DIAF, RES0, M[4], M[3:0] )
-    msr spsr_el2, x0
+    msr spsr_el2, x0 // Record all el2 state
     msr elr_el2, lr
     eret // return to EL1
 

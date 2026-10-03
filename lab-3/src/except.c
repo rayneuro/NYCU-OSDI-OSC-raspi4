@@ -28,7 +28,7 @@ void except_handler_c() {
 
 	//ec
 	unsigned ec = (esr_el1 >> 26) & 0x3F; //0x3F = 0b111111(6)
-	uart_puts("ec: ");
+	uart_puts("ec(esr_el1): ");
 	uart_hex(ec);
 	uart_puts("\n");
 

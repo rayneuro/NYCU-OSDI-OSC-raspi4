@@ -28,3 +28,26 @@ supports 128 entries; initialization halts on reservation/allocation failure.
 
 `mm_init` is idempotent, so the existing `ma` shell command does not reset live
 allocations. The old demonstration allocations have been removed from initialization.
+
+
+Task-list kmalloc integration
+============================
+
+Task nodes use `kmalloc(sizeof(task_t))` and `kfree(task)` after callbacks.
+`mm_init()` must run before task creation; main does so before UART interrupts
+and asynchronous output. Reserved firmware/kernel/initramfs/DTB pages stay out
+of the buddy pool used by kmalloc. Allocator metadata updates save/mask/restore
+IRQ state so nested IRQ bottom halves cannot interrupt partial updates.
+Timer/message allocations still use the separate simple allocator.
+
+```sh
+cc -Wall -Wextra -Wno-sign-compare -g -fsanitize=address,undefined \
+  -ffunction-sections -fdata-sections -I inc \
+  tests/tasklist_mm_test.c src/tasklist.c src/mm.c \
+  -Wl,--gc-sections -o /tmp/lab4-tasklist-test
+ASAN_OPTIONS=detect_leaks=0 /tmp/lab4-tasklist-test
+```
+
+Checks reserved-page exclusion, repeated task allocation/reclamation, FIFO
+priority ordering, higher-priority nested callbacks, restored interrupt masks,
+and queue integrity on allocator exhaustion. Empty slabs may stay cached.

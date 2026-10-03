@@ -1,5 +1,5 @@
 #include "tasklist.h"
-#include "allocator.h"
+#include "mm.h"
 #include "uart.h"
 
 task_t *task_head = NULL;
@@ -38,7 +38,7 @@ void enqueue_task(task_t *new_task) {
 
 void create_task(task_callback callback, uint64_t priority) {
 
-	task_t* task = simple_malloc(sizeof(task_t));
+	task_t* task = kmalloc(sizeof(task_t));
 	if(!task) {
 		return;
 	}
@@ -87,7 +87,7 @@ void execute_tasks(void) {
          */
         flags = irq_save();
         current_task_priority = previous_priority;
-        simple_free(task);
+        kfree(task);
         irq_restore(flags);
     }
 }

@@ -58,6 +58,7 @@ void command_timeout(const char *message, uint64_t seconds)
 void command_help()
 {
     uart_async_send("Supported commands:\n");
+    uart_async_send("\tsyscall_test : Run interactive EL0 syscall tests\n");
     uart_async_send("\tthread_test : Run three round-robin threads\n");
     uart_async_send("\tpreempt_test: Run CPU-bound threads without yielding\n");
     uart_async_send("\tquantum [ms]: Show/set time slice (1..1000 ms)\n");

@@ -16,6 +16,7 @@ _Static_assert(sizeof(struct trap_frame) == 800, "exception frame size");
 void syscall_dispatch(struct trap_frame *f);
 struct process_image;
 void process_image_put(struct process_image *image);
-int process_spawn(const char *name);
+/* start runs on the new process's kernel stack and enters user mode. */
+int process_spawn(const char *name, void (*start)(void));
 void process_return(struct trap_frame *f) __attribute__((noreturn));
 #endif

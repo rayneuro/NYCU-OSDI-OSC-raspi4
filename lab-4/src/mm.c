@@ -1,3 +1,4 @@
+#include "irq.h"
 #include "mm.h"
 #include "uart.h"
 #include "print.h"
@@ -302,6 +303,7 @@ void *obj_allocate(int token) {
         } else {
             // Demand a new page from buddy memory allocator
             page_p = buddy_block_alloc(0);
+            if (!page_p) return NULL;
             __init_obj_page(page_p);
             page_p->obj_alloc = obj_allocator_p;
 
@@ -315,7 +317,7 @@ void *obj_allocate(int token) {
     if (obj_freelist != NULL) {
         // Allocate memory by free list in current page
         allocated_addr = obj_freelist;
-        obj_freelist = obj_freelist->next; // Point to next address of free object;
+        obj_allocator_p->curr_page->free = obj_freelist->next;
     }
     else {
         // Allocate memory to requested object 
@@ -463,7 +465,7 @@ void __init_kmalloc()
     }
 }
 
-void *kmalloc(int size)
+static void *kmalloc_locked(int size)
 {
     #ifdef __DEBUG
     printf("[kmalloc] Requested Size: %d\n", size);
@@ -487,7 +489,9 @@ void *kmalloc(int size)
     // Buddy Memory allocator
     for (int i = 0;i <= MAX_ORDER;i++) {
         if (size <= 1<<(i + PAGE_SHIFT)) {
-            allocated_addr = (void *) buddy_block_alloc(i)->phy_addr;
+            page_t *block = buddy_block_alloc(i);
+            if (!block) return NULL;
+            allocated_addr = (void *)block->phy_addr;
 
             #ifdef __DEBUG
             printf("[kmlloc] Allocated address: 0x%x\n", allocated_addr);
@@ -502,7 +506,7 @@ void *kmalloc(int size)
     return NULL;
 }
 
-void kfree(void *addr) 
+static void kfree_locked(void *addr)
 {
     #ifdef __DEBUG
     printf("[kfree] Free Memory Address: 0x%x\n", addr);
@@ -529,6 +533,24 @@ static void startup_panic(void)
     printf("[mm] Startup memory initialization failed\n");
     for (;;)
         ;
+}
+
+/* Single-core allocator metadata can be accessed by IRQ bottom halves. */
+void *kmalloc(int size)
+{
+    if (size <= 0) return NULL;
+    uint64_t flags = irq_save();
+    void *object = kmalloc_locked(size);
+    irq_restore(flags);
+    return object;
+}
+
+void kfree(void *addr)
+{
+    if (!addr) return;
+    uint64_t flags = irq_save();
+    kfree_locked(addr);
+    irq_restore(flags);
 }
 
 static void reserve_boot_range(uintptr_t start, uintptr_t end)

@@ -116,6 +116,7 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
                 cpio_exec(buf);
             }
             else if(!strcmp( buf,"help")) command_help();
+            else if(!strcmp(buf, "syscall_test")) cpio_exec("syscall_test.bin");
             else if(!strcmp(buf, "thread_test")) thread_test();
             else if(!strcmp(buf, "preempt_test")) thread_preempt_test();
             else if(!strcmp(buf, "quantum"))

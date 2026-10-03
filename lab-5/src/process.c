@@ -100,14 +100,17 @@ static void setup(struct trap_frame *f, thread_t *t, uintptr_t pc)
     f->pstate = 0;
 }
 
-int process_spawn(const char *name)
+int process_spawn(const char *name, void (*start)(void))
 {
+    if (!start) return -1;
     struct process_image *im = image(name);
     if (!im) return -1;
     thread_t *t = allocate_process();
     if (!t) { process_image_put(im); return -1; }
     t->user_image = im;
     setup(t->user_frame, t, im->pages->phy_addr);
+    /* Fresh programs use the loader's entry; fork restores the full frame. */
+    t->entry = start;
     int pid = t->id;
     thread_publish(t);
     return pid;

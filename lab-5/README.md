@@ -182,3 +182,39 @@ BSS-size metadata. Use `-mstrict-align` with MMU disabled. User pointers are tru
 and there is no memory protection. Arguments, wait/status collection, and signals
 are outside this implementation. User synchronous faults terminate the process;
 kernel faults print diagnostics and halt.
+
+
+## Interactive syscall test
+
+Build and boot the dedicated test archive from WSL:
+
+```sh
+cd /home/ray/NYCU-OSDI-OSC-raspi4/lab-5
+make -B kernel8.img
+make QEMU_SYSCALL EMULATOR=/home/ray/qemu-11.0.0-rc1/build/qemu-system-aarch64
+```
+
+At the kernel shell, enter `syscall_test`. When prompted, type `test` and press
+Enter (5 input bytes). It prints named PASS/FAIL checks for getpid, UART write/read,
+mailbox board revision, fork return values and independent stack storage, exec
+replacement, kill of a spinning child, and exit back to the shell. Also check that
+`[PASS] 3 exec: replacement program running` appears; it comes from the child and
+may appear between other lines. A failed input check prints FAIL and exits so you
+can rerun the command. Both parent/child barriers contain no yield or syscall;
+the test needs working EL0 timer preemption and this lab's shared fork image.
+
+`user/syscall_test.c` and `user/syscall_exec_test.c` run in EL0 and use the
+`svc #0` wrappers in `user/syscall.h`. The shell command launches the user binary
+through the existing loader; it does not invoke syscall handlers from EL1.
+
+`make syscall-initramfs` generates `syscall_initramfs.cpio` with just the two test
+programs. It preserves both `initramfs.cpio` and `test_initramfs.cpio`. For a physical
+Pi, install the generated archive using your boot configuration's initramfs
+filename. If booting another archive, include both `.bin` files in it before
+using `syscall_test` (or `exec` followed by `syscall_test.bin`).
+
+Automated check of the same interactive command at 1/10/50 ms:
+
+```sh
+python3 tests/syscall_qemu_test.py --qemu /home/ray/qemu-11.0.0-rc1/build/qemu-system-aarch64
+```

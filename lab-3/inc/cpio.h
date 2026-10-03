@@ -1,5 +1,7 @@
 
 extern char* cpio_addr;
+char *findFile(char *name);
+void cpio_exec(char *filename);
 
 void cpio_ls();
 void cpio_cat(char* filename);

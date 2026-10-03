@@ -6,9 +6,20 @@
 #include "process.h"
 #include "thread.h"
 
+extern void enter_el0(const void *entry, void *stack_top)
+    __attribute__((noreturn));
+
+static void cpio_user_start(void)
+{
+    thread_t *t = get_current();
+    if (t->killed) thread_exit();
+    struct trap_frame *f = t->user_frame;
+    enter_el0((const void *)f->pc, (void *)f->sp);
+}
+
 void cpio_exec(char *filename)
 {
-    int pid = process_spawn(filename);
+    int pid = process_spawn(filename, cpio_user_start);
     if (pid < 0) {
         uart_async_send("Unable to load raw user program\n");
         return;

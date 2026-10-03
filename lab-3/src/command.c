@@ -66,6 +66,7 @@ void command_help()
     uart_puts("\tVC address  : Print video core address\n");
     uart_puts("\tloadimg     : Load the kernel image to target address\n");
     uart_puts("\tls          : list the file \n");
+    uart_puts("\texec        : Run an initramfs raw binary in EL0\n");
     uart_puts("\tcat         : list the file \n");
     uart_puts("\tdtb	     : print device tree\n");
     uart_puts("\tmalloc	     : give dynamic memory space\n");

@@ -3,6 +3,42 @@
 #include "string.h"
 #include "utils.h"
 
+static unsigned char user_stack[16384] __attribute__((aligned(16)));
+extern void enter_el0(const void *entry, void *stack_top)
+    __attribute__((noreturn));
+
+void cpio_exec(char *filename)
+{
+    if (!cpio_addr) {
+        uart_puts("Initramfs is not available\n");
+        return;
+    }
+
+    char *target = findFile(filename);
+    if (!target) {
+        uart_puts("Not found the file\n");
+        return;
+    }
+
+    struct cpio_header *header = (struct cpio_header *)target;
+    unsigned long size = utils_atoi(header->c_filesize, 8);
+    unsigned long mode = utils_atoi(header->c_mode, 8);
+    unsigned long offset = sizeof(*header) + utils_atoi(header->c_namesize, 8);
+    utils_align(&offset, 4);
+    unsigned char *entry = (unsigned char *)target + offset;
+
+    if ((mode & 0170000) != 0100000 || size < 4 ||
+        ((uintptr_t)entry & 3) ||
+        (entry[0] == 0x7f && entry[1] == 'E' &&
+         entry[2] == 'L' && entry[3] == 'F')) {
+        uart_puts("Expected an AArch64 position-independent raw binary\n");
+        return;
+    }
+
+    uart_puts("Entering EL0\n");
+    enter_el0(entry, user_stack + sizeof(user_stack));
+}
+
 char *findFile(char *name)
 {
     char *addr = (char *)cpio_addr;

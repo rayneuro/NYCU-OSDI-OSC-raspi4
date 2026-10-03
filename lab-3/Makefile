@@ -1,4 +1,5 @@
 CC			= aarch64-linux-gnu-gcc
+.DEFAULT_GOAL := all
 LD 			= aarch64-linux-gnu-ld
 OBJ_CPY 	= aarch64-linux-gnu-objcopy
 EMULATOR	= qemu-system-aarch64
@@ -17,7 +18,16 @@ LINK_SCRIPT = link.ld
 VPATH = $(SRCDIR)
 vpath %.c %.S $(SRCDIR) 
 
-.PHONY: all clean loader
+.PHONY: all clean loader initramfs
+
+user/el0_demo.elf: user/el0_demo.c user/link.ld
+	$(CC) $(CFLAGS) -fno-pie -fno-pic -nostdlib -static -Wl,--build-id=none -Wl,-T,user/link.ld $< -o $@
+
+rootfs/el0_demo.bin: user/el0_demo.elf
+	$(OBJ_CPY) -O binary $< $@
+
+initramfs: rootfs/el0_demo.bin
+	cd rootfs && find . -type f | LC_ALL=C sort | cpio -o -H newc > ../initramfs.cpio
 
 all: clean kernel8.img
 

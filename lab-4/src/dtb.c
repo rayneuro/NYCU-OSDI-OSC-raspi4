@@ -37,7 +37,7 @@ int parse_struct (fdt_callback cb, uintptr_t cur_ptr, uintptr_t strings_ptr,uint
 			Token type (4 bytes): Indicates that it's an FDT_BEGIN_NODE token.
 			Node name (variable length, NULL-terminated): Specifies the name of the node being opened.
 			*/
-				//uart_puts("In FDT_BEGIN_NODE\n");
+				//uart_async_send("In FDT_BEGIN_NODE\n");
 				cb(token, (char*)cur_ptr,NULL,0);	
 				cur_ptr += utils_align_up(utils_strlen((char*)cur_ptr),4);
 				break;
@@ -45,7 +45,7 @@ int parse_struct (fdt_callback cb, uintptr_t cur_ptr, uintptr_t strings_ptr,uint
 			/*
 			Token type (4 bytes): Indicates that it's an FDT_END_NODE token.
 			*/
-				//uart_puts("In FDT_END_NODE;\n");
+				//uart_async_send("In FDT_END_NODE;\n");
 				cb(token,NULL,NULL,0);
 				break;
 
@@ -57,7 +57,7 @@ int parse_struct (fdt_callback cb, uintptr_t cur_ptr, uintptr_t strings_ptr,uint
 			Name offset (4 bytes): Provides the offset of the property name within the strings block (nameoff).
 			Property data (variable length): Contains the property data itself, the size of which is determined by len.
 			*/
-				//uart_puts("In FDT_PROP \n");	
+				//uart_async_send("In FDT_PROP \n");	
 				uint32_t len = fdt_u32_le2be((char*)cur_ptr);
 				cur_ptr += 4;
 				uint32_t nameoff = fdt_u32_le2be((char*)cur_ptr);
@@ -69,12 +69,12 @@ int parse_struct (fdt_callback cb, uintptr_t cur_ptr, uintptr_t strings_ptr,uint
 
 			}
 			case FDT_NOP:
-				//uart_puts("In FDT_NOP\n");
+				//uart_async_send("In FDT_NOP\n");
 				cb(token,NULL,NULL,0);
 				break;
 
 			case FDT_END:
-				//uart_puts("In FDT_END\n");
+				//uart_async_send("In FDT_END\n");
 				cb(token,NULL,NULL,0);
 				return 0;
 			default:;

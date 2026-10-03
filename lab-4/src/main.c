@@ -28,7 +28,7 @@ int main()
     // say hello
     fdt_traverse(get_cpio_addr,_dtb_ptr);
     mm_init();
-    uart_puts("Hello World!\n");
+    uart_async_send("Hello World!\n");
     gic_init();
     uart_enable_interrupt();
 

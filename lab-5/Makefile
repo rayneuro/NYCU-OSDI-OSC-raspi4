@@ -65,3 +65,14 @@ process-fixtures: rootfs/process_test.bin rootfs/exec_test.bin
 
 user/process_test.elf: user/process_test.c user/register_probe.S user/syscall.h user/link.ld
 	$(CC) $(CFLAGS) -mstrict-align -fpie -nostdlib -static -Wl,--build-id=none -Wl,-T,user/link.ld user/process_test.c user/register_probe.S -o $@
+
+
+# Interactive syscall tests have their own archive (leave initramfs.cpio intact).
+.PHONY: syscall-fixtures syscall-initramfs QEMU_SYSCALL
+syscall-fixtures: rootfs/syscall_test.bin rootfs/syscall_exec_test.bin
+
+syscall-initramfs: syscall-fixtures
+	cd rootfs && printf '%s\n' syscall_test.bin syscall_exec_test.bin | cpio -o -H newc > ../syscall_initramfs.cpio
+
+QEMU_SYSCALL: kernel8.img syscall-initramfs
+	$(EMULATOR) -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -display none -monitor none -serial stdio -kernel kernel8.img -initrd syscall_initramfs.cpio -dtb bcm2711-rpi-4-b.dtb

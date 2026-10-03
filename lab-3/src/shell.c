@@ -7,6 +7,7 @@
 
 extern void *_dtb_ptr;
 static int timeout_args_pending = 0;
+static int exec_pending = 0;
 
 void read_command(char* buffer) {
 	int index = 0;
@@ -105,7 +106,11 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
         }else{
             buf[(*counter)] = '\0';
              
-            if (timeout_args_pending) {
+            if (exec_pending) {
+                exec_pending = 0;
+                cpio_exec(buf);
+            }
+            else if (timeout_args_pending) {
                 uint64_t seconds;
                 const char *message;
 
@@ -128,6 +133,11 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
             else if(!strcmp(buf, "VC address")) command_vc_base_addr();
             else if(!strcmp(buf, "loadimg")) command_load_image();
             else if(!strcmp(buf,"ls")) command_list_file();
+            else if(!strcmp(buf,"exec")) {
+                exec_pending = 1;
+                show_prompt = 0;
+                uart_puts("Program: ");
+            }
             else if(!strcmp(buf,"cat")) shell_cpio_cat();
             else if(!strcmp(buf,"malloc")) command_malloc();
             else if(!strcmp(buf,"dtb")) command_dtb();

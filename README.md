@@ -30,5 +30,6 @@
 
 - [NYCU OSC 2025 課程與 Lab 網站](https://nycu-caslab.github.io/OSC2025/)
 - [2025 Spring Operating System Capstone 課程資訊與講義](https://people.cs.nycu.edu.tw/~ttyeh/course/2025_Spring/IOC5226/outline.html)
+- [Writing a “bare metal” operating system for Raspberry Pi 4](https://github.com/sypstraw/rpi4-osdev)
 
 

@@ -1,0 +1,8 @@
+*.d
+*.cpio
+rootfs/*.bin
+__pycache__/
+tests/results/
+tests/startup_test
+# This is the supplied test program, not a generated kernel image.
+!rootfs/vm.img

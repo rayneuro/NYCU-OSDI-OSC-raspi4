@@ -26,7 +26,7 @@ user/el0_demo.elf: user/el0_demo.c user/link.ld
 rootfs/el0_demo.bin: user/el0_demo.elf
 	$(OBJ_CPY) -O binary $< $@
 
-initramfs: rootfs/el0_demo.bin
+initramfs: rootfs/el0_demo.bin rootfs/process_test.bin rootfs/exec_test.bin rootfs/syscall_test.bin rootfs/syscall_exec_test.bin
 	cd rootfs && find . -type f | LC_ALL=C sort | cpio -o -H newc > ../initramfs.cpio
 
 all: clean kernel8.img
@@ -50,7 +50,7 @@ start.o: start.S
 %.o: %.c
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-QEMU: all clean
+QEMU: all clean initramfs
 	qemu-system-aarch64 -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -nographic -serial mon:stdio -chardev pty,id=pl011,logfile=pl011.log -serial chardev:pl011 -kernel kernel8.img -initrd initramfs.cpio -dtb bcm2711-rpi-4-b.dtb
 
 QEMU_GDB:
@@ -73,6 +73,3 @@ syscall-fixtures: rootfs/syscall_test.bin rootfs/syscall_exec_test.bin
 
 syscall-initramfs: syscall-fixtures
 	cd rootfs && printf '%s\n' syscall_test.bin syscall_exec_test.bin | cpio -o -H newc > ../syscall_initramfs.cpio
-
-QEMU_SYSCALL: kernel8.img syscall-initramfs
-	$(EMULATOR) -M raspi4b -cpu cortex-a72 -smp 4 -m 2G -display none -monitor none -serial stdio -kernel kernel8.img -initrd syscall_initramfs.cpio -dtb bcm2711-rpi-4-b.dtb

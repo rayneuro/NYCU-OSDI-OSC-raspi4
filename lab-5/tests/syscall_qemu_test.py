@@ -12,6 +12,34 @@ from thread_qemu_test import read_until
 
 LAB = Path(__file__).resolve().parents[1]
 
+def check_fork_trace(output):
+    start = re.findall(rb'Fork Test, pid (\d+)\r\n', output)
+    parent = re.findall(rb'parent here, pid (\d+), child (\d+)\r\n', output)
+    assert len(start) == len(parent) == 1, output
+    parent_pid, child_pid = map(int, parent[0])
+    assert parent_pid == int(start[0]) and child_pid != parent_pid, output
+    rows = re.findall(
+        rb'(first|second) child pid: (\d+), cnt: (\d+), '
+        rb'ptr: (0x[0-9a-f]{16}), sp : (0x[0-9a-f]{16})\r\n', output)
+    assert len(rows) == 5, output
+    first = [row for row in rows if row[0] == b'first']
+    second = [row for row in rows if row[0] == b'second']
+    assert [int(row[2]) for row in first] == [1, 2], output
+    assert [int(row[2]) for row in second] == [2, 3, 4], output
+    assert {int(row[1]) for row in first} == {child_pid}, output
+    grandchild_pids = {int(row[1]) for row in second}
+    assert len(grandchild_pids) == 1 and not grandchild_pids & {parent_pid, child_pid}, output
+    stacks = []
+    for group in (first, second):
+        addresses = {(int(row[3], 16), int(row[4], 16)) for row in group}
+        assert len(addresses) == 1, output
+        ptr, sp = addresses.pop()
+        assert sp > 0 and sp % 16 == 0 and sp <= ptr < sp + 16384, output
+        stacks.append((ptr, sp))
+    # Lab 5 copies and relocates physical stacks; both frames must be distinct.
+    assert stacks[0][0] != stacks[1][0] and stacks[0][1] != stacks[1][1], output
+    assert stacks[0][0] - stacks[0][1] == stacks[1][0] - stacks[1][1], output
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--qemu', default=shutil.which('qemu-system-aarch64'))
@@ -89,6 +117,7 @@ def main():
                                b'[PASS] invalid syscall'):
                     assert marker in output, output
                 assert b'[FAIL]' not in output and b'fault' not in output, output
+                check_fork_trace(output)
                 deadline = time.monotonic() + 10
                 while True:
                     pages, zombies = snapshot()
@@ -97,7 +126,7 @@ def main():
                         break
                     assert time.monotonic() < deadline, (pages, baseline, zombies)
                     time.sleep(0.02)
-                print(f'PASS {quantum} ms: interactive syscall 0..7, timer preemption, reclamation, shell return')
+                print(f'PASS {quantum} ms: interactive syscall 0..7, nested EL0 fork counters/PIDs/64-bit SP, timer preemption, reclamation, shell return')
             # A manual typo must report a named failure and return to shell.
             send(b'syscall_test\r')
             read_until(rx, lambda b: b'[INPUT] Type test then press Enter: ' in b)

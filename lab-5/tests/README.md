@@ -73,3 +73,18 @@ interrupts. The parent/child startup barrier requires EL0 timer preemption.
 Monitor snapshots check the zombie list and free-page recovery (allowing the
 allocator's single cached descriptor slab). The original kernel-thread test
 also covers EL1 preemption, nested interrupts and timeout callbacks.
+
+Interactive syscall and nested fork test
+=======================================
+
+```sh
+python3 tests/syscall_qemu_test.py --qemu /path/to/qemu-system-aarch64
+```
+
+Runs `syscall_test` in EL0 at 1/10/50 ms quanta. The nested fork case checks
+first-child counters 1/2, second-child counters 2/3/4, parent/child PID relations,
+and five complete output lines containing `&cnt` and the actual 64-bit SP.
+Each child's addresses must remain stable; the two children must use distinct
+stacks with 16-byte-aligned SPs and matching local-variable offsets. The user
+program also checks counter isolation. Existing syscall, reclamation and invalid
+input checks remain enabled; the test uses a temporary initramfs.

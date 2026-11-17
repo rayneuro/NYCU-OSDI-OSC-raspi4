@@ -37,13 +37,13 @@ void command_timestamp()
     ftoa(time, str,6);
     uart_async_send("[");
     uart_async_send(str);
-    uart_async_send("]\n");
+    uart_async_send("]\n\r");
     
 }
 
 void command_hello()
 {
-    uart_async_send("Hello world!\n");
+    uart_async_send("Hello world!\n\r");
 }
 
 void command_timeout(const char *message, uint64_t seconds)
@@ -58,29 +58,29 @@ void command_timeout(const char *message, uint64_t seconds)
 void command_help()
 {
     uart_async_send("Supported commands:\n");
-    uart_async_send("\tsyscall_test : Run interactive EL0 syscall tests\n");
-    uart_async_send("\tthread_test : Run three round-robin threads\n");
-    uart_async_send("\tpreempt_test: Run CPU-bound threads without yielding\n");
-    uart_async_send("\tquantum [ms]: Show/set time slice (1..1000 ms)\n");
-    uart_async_send("\thello       : Print Hello world\n");
-    uart_async_send("\thelp        : Show this help message\n");
-    uart_async_send("\treboot  : Reboot the rpi4 \n");
-    uart_async_send("\ttimestamp   : Show current timestamp\n");
-    uart_async_send("\tSetTimeout  : Schedule a timer callback\n");
-    uart_async_send("\tboardvision : Print board vision\n");
-    uart_async_send("\tVC address  : Print video core address\n");
-    uart_async_send("\tloadimg     : Load the kernel image to target address\n");
-    uart_async_send("\texec        : Run an initramfs raw binary in EL0\n");
-    uart_async_send("\tls          : list the file \n");
-    uart_async_send("\tcat         : list the file \n");
-    uart_async_send("\tdtb	     : print device tree\n");
-    uart_async_send("\tmalloc	     : give dynamic memory space\n");
-    uart_async_send("\tma          : Initialize system of memory management\n");
+    uart_async_send("\tsyscall_test : Run interactive EL0 syscall tests\n\r");
+    uart_async_send("\tthread_test : Run three round-robin threads\n\r");
+    uart_async_send("\tpreempt_test: Run CPU-bound threads without yielding\n\r");
+    uart_async_send("\tquantum [ms]: Show/set time slice (1..1000 ms)\n\r");
+    uart_async_send("\thello       : Print Hello world\n\r");
+    uart_async_send("\thelp        : Show this help message\n\r");
+    uart_async_send("\treboot  : Reboot the rpi4 \n\r");
+    uart_async_send("\ttimestamp   : Show current timestamp\n\r");
+    uart_async_send("\tSetTimeout  : Schedule a timer callback\n\r");
+    uart_async_send("\tboardvision : Print board vision\n\r");
+    uart_async_send("\tVC address  : Print video core address\n\r");
+    uart_async_send("\tloadimg     : Load the kernel image to target address\n\r");
+    uart_async_send("\texec        : Run an initramfs raw binary in EL0\n\r");
+    uart_async_send("\tls          : list the file \n\r");
+    uart_async_send("\tcat         : list the file \n\r");
+    uart_async_send("\tdtb	     : print device tree\n\r");
+    uart_async_send("\tmalloc	     : give dynamic memory space\n\r");
+    uart_async_send("\tma          : Initialize system of memory management\n\r");
 }
 
 void command_reboot()
 {
-    uart_async_send("Rebooting...\n");
+    uart_async_send("Rebooting...\n\r");
     // Pi 4 's PM  module have short timeout will ignore or delay（race condition）。
     mmio_write(PM_WDOG, PM_PASSWORD | 100);    // Set watchdog timer to 100 tick
     

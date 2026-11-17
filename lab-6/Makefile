@@ -25,21 +25,19 @@ user/process_test.elf: user/process_test.c user/register_probe.S user/syscall.h 
 	$(CC) $(CFLAGS) -mstrict-align -nostdlib -static -Wl,--build-id=none -Wl,-T,user/link.ld user/process_test.c user/register_probe.S -o $@
 rootfs/%.bin: user/%.elf
 	$(OBJCOPY) -O binary $< $@
-initramfs.cpio: $(USER_BINS) rootfs/vm.img rootfs/file1.txt rootfs/file2.txt
+initramfs.cpio: $(USER_BINS) rootfs/vm.img rootfs/file1.txt rootfs/file2.txt rootfs/syscall_test.bin rootfs/syscall_exec_test.bin
 	cd rootfs && find . -type f -printf '%P\n' | LC_ALL=C sort | cpio -o -H newc > ../$@
 initramfs: initramfs.cpio
 process-fixtures: rootfs/process_test.bin rootfs/exec_test.bin
 syscall-fixtures: rootfs/syscall_test.bin rootfs/syscall_exec_test.bin
 syscall-initramfs: syscall-fixtures
 	cd rootfs && printf '%s\n' syscall_test.bin syscall_exec_test.bin | cpio -o -H newc > ../syscall_initramfs.cpio
-QEMU: all
-	$(EMULATOR) $(QEMU_FLAGS) -serial stdio
 QEMU_HEADLESS: all
 	$(EMULATOR) $(QEMU_FLAGS) -display none -monitor none -serial stdio
 QEMU_GDB: all
 	$(EMULATOR) $(QEMU_FLAGS) -display none -serial stdio -s -S
-QEMU_SYSCALL: kernel8.img syscall-initramfs
-	$(EMULATOR) -M raspi4b -m 2G -display none -monitor none -serial stdio -kernel kernel8.img -initrd syscall_initramfs.cpio -dtb bcm2711-rpi-4-b.dtb
+QEMU: kernel8.img syscall-initramfs
+	$(EMULATOR) -M raspi4b -m 2G -display none -monitor none -serial stdio -kernel kernel8.img -initrd initramfs.cpio -dtb bcm2711-rpi-4-b.dtb
 test: all
 	python3 tests/vm_qemu_test.py
 .PHONY: test-all test-allocator

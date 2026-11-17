@@ -3,6 +3,7 @@
 #include "syscall.h"
 
 static volatile unsigned fork_ready = 0xffffffff;
+static volatile unsigned grandchild_done = 0xffffffff;
 static volatile unsigned spinner_ready = 0xffffffff;
 
 static void say(const char *s)
@@ -27,6 +28,109 @@ static void require(int ok, const char *name)
         say(name);
         say("\r\n");
         exit(1);
+    }
+}
+
+static char *append_text(char *out, const char *text)
+{
+    while (*text) *out++ = *text++;
+    return out;
+}
+
+static char *append_number(char *out, unsigned long value, unsigned base,
+                           unsigned width)
+{
+    static const char digits[] = "0123456789abcdef";
+    char reversed[20];
+    unsigned n = 0;
+    do {
+        reversed[n++] = digits[value % base];
+        value /= base;
+    } while (value);
+    while (n < width) reversed[n++] = '0';
+    while (n) *out++ = reversed[--n];
+    return out;
+}
+
+static void report_child(const char *name, volatile int *cnt, unsigned long sp)
+{
+    char line[128];
+    char *end = append_text(line, name);
+    end = append_text(end, " child pid: ");
+    end = append_number(end, getpid(), 10, 1);
+    end = append_text(end, ", cnt: ");
+    end = append_number(end, *cnt, 10, 1);
+    end = append_text(end, ", ptr: 0x");
+    end = append_number(end, (unsigned long)cnt, 16, 16);
+    end = append_text(end, ", sp : 0x");
+    end = append_number(end, sp, 16, 16);
+    end = append_text(end, "\r\n");
+    /* One write keeps concurrent child output from mixing within a line. */
+    uart_write(line, end - line);
+}
+
+static void delay(unsigned count)
+{
+    while (count--) asm volatile("nop");
+}
+
+static void fork_test(void)
+{
+    int pid = getpid();
+    say("\r\nFork Test, pid ");
+    number(pid);
+    say("\r\n");
+    volatile int cnt = 1;
+    volatile unsigned local = 42;
+    volatile unsigned *pointer = &local;
+    int ret = fork();
+    require(ret >= 0, "fork allocation");
+    if (ret == 0) {
+        require(getpid() != pid && *pointer == 42, "fork child registers/stack");
+        *pointer = 99;
+        unsigned long cur_sp;
+        /* Capture this EL0 frame's SP, before calling the output helper. */
+        asm volatile("mov %0, sp" : "=r"(cur_sp));
+        report_child("first", &cnt, cur_sp);
+        ++cnt;
+
+        ret = fork();
+        require(ret >= 0, "nested fork allocation");
+        if (ret != 0) {
+            asm volatile("mov %0, sp" : "=r"(cur_sp));
+            report_child("first", &cnt, cur_sp);
+            while (grandchild_done != 1) asm volatile("nop");
+            require(cnt == 2 && *pointer == 99, "nested fork stack isolation");
+        } else {
+            while (cnt < 5) {
+                asm volatile("mov %0, sp" : "=r"(cur_sp));
+                report_child("second", &cnt, cur_sp);
+                delay(1000000);
+                ++cnt;
+            }
+            grandchild_done = 1;
+            exit(0);
+        }
+        say("[PASS] 4 fork child: return=0, independent stack\r\n");
+        fork_ready = 1;
+        /* Retain the exec check; the replacement program calls exit(). */
+        exec("syscall_exec_test.bin", 0);
+        say("[FAIL] exec replacement returned\r\n");
+        exit(1);
+    } else {
+        char line[80];
+        char *end = append_text(line, "parent here, pid ");
+        end = append_number(end, pid, 10, 1);
+        end = append_text(end, ", child ");
+        end = append_number(end, ret, 10, 1);
+        end = append_text(end, "\r\n");
+        uart_write(line, end - line);
+        /* No syscall/yield: timer preemption must run both descendants. */
+        while (fork_ready != 1) asm volatile("nop");
+        require(cnt == 1 && *pointer == 42, "fork parent stack isolation");
+        say("[PASS] 4 fork parent: child pid=");
+        number(ret);
+        say("\r\n");
     }
 }
 
@@ -57,28 +161,9 @@ void _start(void)
     number(box[5]);
     say("\r\n");
 
-    volatile unsigned local = 42;
-    volatile unsigned *pointer = &local;
-    int child = fork();
-    require(child >= 0, "fork allocation");
-    if (child == 0) {
-        require(getpid() != pid && *pointer == 42, "fork child registers/stack");
-        *pointer = 99;
-        say("[PASS] 4 fork child: return=0, independent stack\r\n");
-        fork_ready = 1;
-        /* On success this process continues in syscall_exec_test.bin. */
-        exec("syscall_exec_test.bin", 0);
-        say("[FAIL] exec replacement returned\r\n");
-        exit(1);
-    }
-    /* No syscall/yield in this barrier: a timer must schedule the child. */
-    while (fork_ready != 1) asm volatile("nop");
-    require(*pointer == 42, "fork parent stack isolation");
-    say("[PASS] 4 fork parent: child pid=");
-    number(child);
-    say("\r\n");
+    fork_test();
 
-    child = fork();
+    int child = fork();
     require(child >= 0, "spinner fork");
     if (child == 0) {
         spinner_ready = 1;

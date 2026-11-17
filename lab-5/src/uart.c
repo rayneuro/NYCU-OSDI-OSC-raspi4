@@ -291,4 +291,5 @@ void uart_async_send(const char *str)
         ++end;
 
     uart_async_write(str, (int)(end - str));
+    
 }

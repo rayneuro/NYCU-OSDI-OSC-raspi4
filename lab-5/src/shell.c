@@ -92,7 +92,7 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
         int show_prompt = 1;
 
         // Typing Enter on concole (Putty or tty) == '\r' == ch
-        uart_async_send("\n");
+        uart_async_send("\n\r");
         
         if((*counter) == MAX_BUFFER_LEN){
             return ;
@@ -107,7 +107,7 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
                 if (parse_timeout_args(buf, &seconds, &message))
                     command_timeout(message, seconds);
                 else
-                    uart_async_send("Usage: <seconds> <message>\n");
+                    uart_async_send("Usage: <seconds> <message>\n\r");
             }else if(get_cpio_pending){
                 get_cpio_pending = 0;
                 cpio_cat(buf);
@@ -120,7 +120,7 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
             else if(!strcmp(buf, "thread_test")) thread_test();
             else if(!strcmp(buf, "preempt_test")) thread_preempt_test();
             else if(!strcmp(buf, "quantum"))
-                printf("Quantum: %d ms\n", (int)thread_get_quantum_ms());
+                printf("Quantum: %d ms\n\r", (int)thread_get_quantum_ms());
             else if(buf[0] == 'q' && buf[1] == 'u' && buf[2] == 'a' &&
                     buf[3] == 'n' && buf[4] == 't' && buf[5] == 'u' &&
                     buf[6] == 'm' && buf[7] == ' ') {
@@ -129,9 +129,9 @@ void command_line_parser(enum SHELL_CHARACTER cp, char ch, char buf[] , int * co
                 while (*arg >= '0' && *arg <= '9' && ms <= 1000)
                     ms = ms * 10 + (unsigned int)(*arg++ - '0');
                 if (*arg || !thread_set_quantum_ms(ms))
-                    printf("Usage: quantum <1..1000 ms>\n");
+                    printf("Usage: quantum <1..1000 ms>\n\r");
                 else
-                    printf("Quantum: %d ms\n", (int)thread_get_quantum_ms());
+                    printf("Quantum: %d ms\n\r", (int)thread_get_quantum_ms());
             }
             else if(!strcmp(buf, "hello")) command_hello();
             else if(!strcmp(buf, "timestamp")) command_timestamp();

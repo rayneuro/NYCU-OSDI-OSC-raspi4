@@ -20,7 +20,7 @@ _start:
     ldr     x1, =__bss_start     // Start address
     ldr     w2, =__bss_size      // Size of the section
 3:  cbz     w2, 4f               // Quit loop if zero
-    str     xzr, [x1], #8
+    str     xzr, [x1], #8       // Write the 8 bytes 0, and add x1 by 8
     sub     w2, w2, #1
     cbnz    w2, 3b               // Loop if non-zero
 
